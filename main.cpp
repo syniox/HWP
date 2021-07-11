@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <cassert>
 #include <map>
 static const int eps=1e-6;
 using std::cin;
@@ -38,7 +39,13 @@ bool operator < (const vec &a,const vec &b){
 }
 
 bool crossed(const edg &a,const edg &b){//重合情况不考虑
-	return ((b.a-a.a)*(a.b-a.a)>0)==((b.b-a.a)*(a.b-a.a)>0);
+	return ((b.a-a.a)*(a.b-a.a))*((b.b-a.a)*(a.b-a.a))<0;
+}
+
+int getdr(const edg &e){//r0u1l2d3
+	assert(e.a.x==e.b.x||e.a.y==e.b.y);
+	if(e.a.y==e.b.y) return (e.a.x>e.b.x)<<1;
+	if(e.a.x==e.b.x) return (e.a.x>e.b.x)<<1|1;
 }
 
 bool isvalid(rect a,cls_s &cl){
@@ -75,6 +82,25 @@ void get_cls(const int edgcnt){
 			if(a.x<b.x&&a.y>b.y) c=(vec){b.x,a.y};
 			addegbuk(eg,pntidx,a,c);
 			addegbuk(eg,pntidx,c,b);
+		}
+	}
+
+	vis.resize(eg.size());
+	for(int i=0; i<(int)eg.size(); ++i){
+		if(vis[i]) continue;
+		clss.push_back(cls_s());
+		clss.rbegin()->push_back(eg[i]);
+		for(int id=i,cnt=0; cnt<1e5; ++cnt){//防止数据不合法？
+			int curdr=getdr(eg[id]),res=id;
+			for(int j:pntidx[eg[id].b]){//WIP
+				if(eg[j].a!=eg[id].b) continue;
+				if(res==id||((curdr-getdr(res)+4)&3)>(curdr-getdr(j)+4)&3)
+					res=j;
+			}
+			assert(res!=id);
+			if(res==i) break;
+			id=res;
+			clss.rbegin()->push_back(eg[id]);
 		}
 	}
 }
