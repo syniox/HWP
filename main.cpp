@@ -5,14 +5,14 @@ static const int eps=1e-6;
 using std::cin;
 using std::vector;
 using std::map;
+//x,y: 平面直角坐标系
 
 struct vec{//向量
 	double x,y;
 	static vec get();
 };
-struct edg{//边，a为起点，b为终点，合法区域在这个边向量的左边（叉积大于0）
+struct edg{//边，a为起点，b为终点，合法区域在这个边向量的左边
 	vec a,b;
-	bool contain(const vec &x);
 };
 struct rect{
 	vec v[4];
@@ -33,33 +33,48 @@ double operator *(const vec &a,const vec &b){
 vec operator - (const vec &a,const vec &b){
 	return (vec){a.x-b.x,a.y-b.y};
 }
-bool edg::contain(const vec &x){
-	return (b-a)*(x-a)>eps;
+bool operator < (const vec &a,const vec &b){
+	return a.x==b.x?a.y<b.y:a.x<b.x;
+}
+
+bool crossed(const edg &a,const edg &b){//重合情况不考虑
+	return ((b.a-a.a)*(a.b-a.a)>0)==((b.b-a.a)*(a.b-a.a)>0);
 }
 
 bool isvalid(rect a,cls_s &cl){
 	for(edg v:cl){
 		for(int i=0; i<4; ++i){
-			if(!v.contain(a.v[i])) return 0;
+			if(crossed((edg){a.v[i],a.v[(i+1)&3]},v))
+				return 0;
 		}
 	}
 	return 1;
 }
 
+void addegbuk(vector<edg> &eg,map<vec,std::vector<int>> &pntidx,vec a,vec b){
+	eg.push_back((edg){a,b});
+	pntidx[a].push_back(eg.size());
+	pntidx[b].push_back(eg.size());
+}
+
 void get_cls(const int edgcnt){
 	vector<edg> eg;
 	map<vec,std::vector<int>> pntidx;
-	eg.reserve(edgcnt);
+	vector<bool> vis;
 	for(int i=1,dir; i<=edgcnt; ++i){
 		vec a=vec::get(),b=vec::get();
 		cin>>dir;
 		if(dir) std::swap(a,b);
 		if(a.x==b.x||a.y==b.y){
-			eg.push_back((edg){a,b});
-			map[a].push_back(i);
-			map[b].push_back(i);
+			addegbuk(eg,pntidx,a,b);
 		}else{
-
+			vec c;
+			if(a.x<b.x&&a.y<b.y) c=(vec){a.x,b.y};
+			if(a.x>b.x&&a.y<b.y) c=(vec){b.x,a.y};
+			if(a.x>b.x&&a.y>b.y) c=(vec){a.x,b.y};
+			if(a.x<b.x&&a.y>b.y) c=(vec){b.x,a.y};
+			addegbuk(eg,pntidx,a,c);
+			addegbuk(eg,pntidx,c,b);
 		}
 	}
 }
