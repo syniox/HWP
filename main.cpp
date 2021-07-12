@@ -15,7 +15,7 @@ struct vec{//向量
 struct edg{//边，a为起点，b为终点，合法区域在这个边向量的左边
 	vec a,b;
 };
-struct rect{
+struct rect4{//rectangle, 长方形的四个顶点
 	vec v[4];
 };
 
@@ -42,16 +42,16 @@ bool operator != (const vec &a,const vec &b){
 }
 
 bool crossed(const edg &a,const edg &b){//线段是否相交，重合情况不考虑
-	return ((b.a-a.a)*(a.b-a.a))*((b.b-a.a)*(a.b-a.a))<0;
+	return ((b.a-a.a)*(a.b-a.a))*((b.b-a.a)*(a.b-a.a))<-eps;
 }
 
-int getdr(const edg &e){//右0上1左2下3
+int getdr(const edg &e){//返回向量方向，右0上1左2下3
 	assert(e.a.x==e.b.x||e.a.y==e.b.y);
 	if(e.a.y==e.b.y) return (e.a.x>e.b.x)<<1;
 	else return (e.a.x>e.b.x)<<1|1;
 }
 
-bool isvalid(rect a,cls_s &cl){
+bool isvalid(rect4 a,cls_s &cl){
 	for(edg v:cl){
 		for(int i=0; i<4; ++i){
 			if(crossed((edg){a.v[i],a.v[(i+1)&3]},v))
@@ -61,12 +61,12 @@ bool isvalid(rect a,cls_s &cl){
 	return 1;
 }
 
-void addegbuk(vector<edg> &eg,map<vec,std::vector<int>> &pntidx,vec a,vec b){
+void addedg(vector<edg> &eg,map<vec,std::vector<int>> &pntidx,vec a,vec b){
 	eg.push_back((edg){a,b});
 	pntidx[a].push_back(eg.size());
 }
 
-void get_cls(const int edgcnt){//根据题目给出的边构建闭包
+void getcls(const int edgcnt){//根据题目给出的边构建rectilinear block
 	vector<edg> eg;
 	map<vec,std::vector<int>> pntidx;
 	vector<bool> vis;
@@ -75,7 +75,7 @@ void get_cls(const int edgcnt){//根据题目给出的边构建闭包
 		cin>>dir;
 		if(dir) std::swap(a,b);
 		if(a.x==b.x||a.y==b.y){
-			addegbuk(eg,pntidx,a,b);
+			addedg(eg,pntidx,a,b);
 		}else{
 			vec c;//斜边预处理
 			if(a.x<b.x&&a.y<b.y) c=(vec){a.x,b.y};
@@ -115,7 +115,7 @@ double getdis(const vec &a,const vec &b){
 	return cabs(a.x-b.x)+cabs(a.y-b.y);
 }
 
-vec getgreatpos(vec rct,cls_s &cl,bool &rot){
+vec getgreatpos(vec rct,cls_s &cl,bool &rot){//寻找某个闭包的最优位置
 	//rct描述长宽，cl表示搜寻的闭包
 	//rot记录是否旋转90度，函数返回左下角位置
 
@@ -124,7 +124,7 @@ vec getgreatpos(vec rct,cls_s &cl,bool &rot){
 int main(){
 	int edgcnt,modcnt;
 	cin>>edgcnt>>modcnt;
-	get_cls(edgcnt);
+	getcls(edgcnt);
 	while(modcnt--){
 		vec v=vec::get(),tgt=vec::get();
 		for(cls_s cl:clss){
