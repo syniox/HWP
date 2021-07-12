@@ -21,7 +21,7 @@ struct rect{
 
 using cls_s=vector<edg>;
 
-std::vector<cls_s> clss;
+vector<cls_s> clss;//闭包集合
 
 vec vec::get(){
 	double x,y;
@@ -37,15 +37,18 @@ vec operator - (const vec &a,const vec &b){
 bool operator < (const vec &a,const vec &b){
 	return a.x==b.x?a.y<b.y:a.x<b.x;
 }
+bool operator != (const vec &a,const vec &b){
+	return a.x!=b.x||a.y!=b.y;
+}
 
-bool crossed(const edg &a,const edg &b){//重合情况不考虑
+bool crossed(const edg &a,const edg &b){//线段是否相交，重合情况不考虑
 	return ((b.a-a.a)*(a.b-a.a))*((b.b-a.a)*(a.b-a.a))<0;
 }
 
-int getdr(const edg &e){//r0u1l2d3
+int getdr(const edg &e){//右0上1左2下3
 	assert(e.a.x==e.b.x||e.a.y==e.b.y);
 	if(e.a.y==e.b.y) return (e.a.x>e.b.x)<<1;
-	if(e.a.x==e.b.x) return (e.a.x>e.b.x)<<1|1;
+	else return (e.a.x>e.b.x)<<1|1;
 }
 
 bool isvalid(rect a,cls_s &cl){
@@ -61,10 +64,9 @@ bool isvalid(rect a,cls_s &cl){
 void addegbuk(vector<edg> &eg,map<vec,std::vector<int>> &pntidx,vec a,vec b){
 	eg.push_back((edg){a,b});
 	pntidx[a].push_back(eg.size());
-	pntidx[b].push_back(eg.size());
 }
 
-void get_cls(const int edgcnt){
+void get_cls(const int edgcnt){//根据题目给出的边构建闭包
 	vector<edg> eg;
 	map<vec,std::vector<int>> pntidx;
 	vector<bool> vis;
@@ -75,7 +77,7 @@ void get_cls(const int edgcnt){
 		if(a.x==b.x||a.y==b.y){
 			addegbuk(eg,pntidx,a,b);
 		}else{
-			vec c;
+			vec c;//斜边预处理
 			if(a.x<b.x&&a.y<b.y) c=(vec){a.x,b.y};
 			if(a.x>b.x&&a.y<b.y) c=(vec){b.x,a.y};
 			if(a.x>b.x&&a.y>b.y) c=(vec){a.x,b.y};
@@ -94,7 +96,7 @@ void get_cls(const int edgcnt){
 			int curdr=getdr(eg[id]),res=id;
 			for(int j:pntidx[eg[id].b]){//WIP
 				if(eg[j].a!=eg[id].b) continue;
-				if(res==id||((curdr-getdr(res)+4)&3)>(curdr-getdr(j)+4)&3)
+				if(res==id||((curdr-getdr(eg[res])+4)&3)>((curdr-getdr(eg[j])+4)&3))
 					res=j;
 			}
 			assert(res!=id);
@@ -105,7 +107,17 @@ void get_cls(const int edgcnt){
 	}
 }
 
-vec getgreatpos(rect a,std::vector<edg> &cl){
+template <typename T>
+const T cabs(const T &x){
+	return x<0?-x:x;
+}
+double getdis(const vec &a,const vec &b){
+	return cabs(a.x-b.x)+cabs(a.y-b.y);
+}
+
+vec getgreatpos(vec rct,cls_s &cl,bool &rot){
+	//rct描述长宽，cl表示搜寻的闭包
+	//rot记录是否旋转90度，函数返回左下角位置
 
 }
 
@@ -114,7 +126,10 @@ int main(){
 	cin>>edgcnt>>modcnt;
 	get_cls(edgcnt);
 	while(modcnt--){
+		vec v=vec::get(),tgt=vec::get();
+		for(cls_s cl:clss){
 
+		}
 	}
 	return 0;
 }
