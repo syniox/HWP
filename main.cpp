@@ -1,9 +1,11 @@
 #include <iostream>
 #include <vector>
 #include <cassert>
+#include <algorithm>
 #include <map>
 static const int eps=1e-6;
 using std::cin; using std::cout; using std::cerr; using std::endl;
+using std::min; using std::max;
 using std::vector;
 using std::map;
 // x,y: 平面直角坐标系
@@ -11,10 +13,12 @@ using std::map;
 struct vec{ // 向量
 	double x,y;
 	static vec get();
+	inline void flip();
 };
 struct edg{ // 边，a为起点，b为终点，合法区域在这个边向量的左边
 	vec a,b;
 	inline int dr();
+	inline void flip();
 };
 struct mdl{ // module, 记录该模块长方形的四个顶点，保证连续
 	vec v[4];
@@ -30,6 +34,9 @@ vec vec::get(){
 	double x,y;
 	cin>>x>>y;
 	return (vec){x,y};
+}
+inline void vec::flip(){
+	std::swap(x,y);
 }
 template <typename T>
 vec operator * (const vec &v,const T x){
@@ -67,13 +74,16 @@ int edg::dr(){ // 返回向量方向，右0上1左2下3
 	if(a.y==b.y) return (a.x>b.x)<<1;
 	else return (a.x>b.x)<<1|1;
 }
+inline void edg::flip(){
+	a.flip(),b.flip();
+}
 
 inline vec mdl::cntr(){
 	return (v[0]+v[1]+v[2]+v[3])*0.25;
 }
 inline void mdl::flip(){
 	for(int i=0; i<4; ++i){
-		swap(v[i].x,v[i].y);
+		std::swap(v[i].x,v[i].y);
 	}
 }
 
@@ -112,7 +122,6 @@ void get_cls(const int edgcnt){ // 根据题目给出的边构建rectilinear blo
 			add_edg(eg,vec_idx,c,b);
 		}
 	}
-
 	vis.resize(eg.size());
 	for(int i=0; i<(int)eg.size(); ++i){
 		if(vis[i]) continue;
@@ -156,16 +165,69 @@ bool on_edge(const edg &e,const mdl &m){
 	assert(cnt==0||cnt==2);
 	return cnt==2;
 }
-
-mdl get_great_pos_basic(vec rct,cls_s &cl){//横向
-
+template <typename T>
+void flip_vec(vector <T> vt){
+	for(T &x:vt) x.flip();
 }
 
-mdl get_great_pos(vec rct,cls_s &cl){// 寻找某个闭包的最优位置
+mdl get_great_pos_basic(vec rct,cls_s &cl){//横向
+	using pdd=std::pair<double,double>;
+	vector<pdd> invalid_seg,neo_seg;
+	mdl gpos; // great pos
+	double res;
+	for(edg cur_e:cl){
+		if(cur_e.dr()&1) continue; // 保证横向
+		invalid_seg.clear();
+		neo_seg.clear();
+		for(edg e:cl){
+			if((e.dr()&1)||cur_e.dr()==e.dr()) continue;
+			if(cabs(cur_e.a.y-e.a.y)<rct.y){ // 忽略刚好重合的情况
+				int a=e.a.x,b=e.b.x;
+				if(a>b) std::swap(a,b);
+				invalid_seg.push_back(std::make_pair(a,b));
+			}
+		}
+		{
+			double end=-1e18,start;
+			for(pdd pr:invalid_seg){
+				if(end<pr.first){
+					if(end>-1e18) neo_seg.push_back(std::make_pair(start,end));
+					start=pr.first,end=pr.end;
+				}else{
+					end=std::max(end,pr.end);
+				}
+			}
+		}
+		vector<pdd>::iterator it1=neo_seg.begin(),it2=it1;
+		++it2;
+		for(; it2!=neo_seg.end(); ++it1,++it2){
+			int a=min(cur_e.a.x,cur_e.b.x),b=a^cur_e.a.x^cur_e.b.x;
+			int l=max(a,it1->second);
+			int r=min(b,it2->first);
+		}
+	}
+}
+
+mdl get_great_pos(vec rct,cls_s &cl,vec tgt){// 寻找某个闭包的最优位置
 	// cl表示搜寻的闭包
 	// 函数返回模块最后占用的位置
-	for(edg e:cl){
+	mdl mpos[4];
+	mpos[0]=get_great_pos_basic(rct,cl); // 横着的原矩阵 横向rb
+	rct.flip();
+	mpos[1]=get_great_pos_basic(rct,cl); // 竖着的原矩阵 横向rb
+	flip_vec(cl);
+	mpos[2]=get_great_pos_basic(rct,cl); // 横着的原矩阵 竖向rb（坐标系颠倒）
+	rct.flip();
+	mpos[3]=get_great_pos_basic(rct,cl); // 竖着的原矩阵 竖向rb（坐标系颠倒）
+	flip_vec(cl);
+	mpos[2].flip(),mpos[3].flip();
+	mdl pos=mpos[0];
+	double res=get_dis(mpos[0].cntr(),tgt);
+	for(int i=1; i<4; ++i){
+		double tmp=get_dis(mpos[i].cntr(),tgt);
+		if(tmp<res) res=tmp,pos=mpos[i];
 	}
+	return pos;
 }
 
 void insert_mdl(cls_s &cl,mdl md){// 将该区域设为不可用区域（假设该模块紧贴边缘）
@@ -198,7 +260,7 @@ int main(){
 		cls_s *best_cl;
 		mdl mpos;
 		for(cls_s &cl:clss){
-			mdl cur=get_great_pos(v,cl);
+			mdl cur=get_great_pos(v,cl,tgt);
 			double tmp_res=get_dis(cur.cntr(),tgt);
 			if(tmp_res<res){
 				best_cl=&cl;
