@@ -128,19 +128,36 @@ vec get_great_pos(vec rct,cls_s &cl,bool &rot){//寻找某个闭包的最优位�
 
 }
 
+void insert_mod(cls_s &cl,vec rct,vec pos){
+
+}
+
 int main(){
 	int edgcnt,modcnt;
 	cin>>edgcnt>>modcnt;
 	get_cls(edgcnt);
 	while(modcnt--){
-		vec v=vec::get(),tgt=vec::get();//返回最优位置的中心？
+		vec v=vec::get(),tgt=vec::get(),pos;//返回最优位置的中心？
 		double res=1e18;
-		vec ans;
 		bool rot;
-		for(cls_s cl:clss){
+		cls_s *best_cl;
+		for(cls_s &cl:clss){
 			bool cur_rot;
 			vec vpos=get_great_pos(v,cl,cur_rot),center;
+			if(cur_rot==1){
+				center=(vec){vpos.x+v.y*0.5,vpos.y+v.x*0.5};
+			}else{
+				center=vpos+v*0.5;
+			}
+			if(get_dis(center,tgt)<res){
+				best_cl=&cl;
+				rot=cur_rot;
+				pos=vpos;
+			}
 		}
+		assert(res<1e18);
+		if(rot) v=(vec){v.y,v.x};
+		insert_mod(*best_cl,v,pos);
 	}
 	return 0;
 }
