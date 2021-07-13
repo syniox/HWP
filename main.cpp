@@ -3,7 +3,7 @@
 #include <cassert>
 #include <map>
 static const int eps=1e-6;
-using std::cin;
+using std::cin; using std::cout; using std::cerr; using std::endl;
 using std::vector;
 using std::map;
 // x,y: 平面直角坐标系
@@ -44,8 +44,16 @@ vec operator - (const vec &a,const vec &b){
 bool operator < (const vec &a,const vec &b){
 	return a.x==b.x?a.y<b.y:a.x<b.x;
 }
-bool operator != (const vec &a,const vec &b){
-	return a.x!=b.x||a.y!=b.y;
+bool operator == (const vec &a,const vec &b){
+	return a.x==b.x&&a.y==b.y;
+}
+std::ostream& operator << (std::ostream &out,const vec &v){
+	out<<'('<<v.x<<' '<<v.y<<')';
+	return out;
+}
+std::ostream& operator << (std::ostream &out,const edg &e){
+	out<<e.a<<"->"<<e.b;
+	return out;
 }
 
 bool crossed(const edg &a,const edg &b){ // 线段是否相交，重合情况不考虑
@@ -70,12 +78,12 @@ bool valid(rect4 a,cls_s &cl){
 
 void add_edg(vector<edg> &eg,map<vec,std::vector<int>> &vec_idx,vec a,vec b){
 	eg.push_back((edg){a,b});
-	vec_idx[a].push_back(eg.size());
+	vec_idx[a].push_back(eg.size()-1);
 }
 
 void get_cls(const int edgcnt){ // 根据题目给出的边构建rectilinear block
 	vector<edg> eg;
-	map<vec,std::vector<int>> vec_idx;
+	map<vec,vector<int>> vec_idx;
 	vector<bool> vis;
 	for(int i=1,dir; i<=edgcnt; ++i){
 		vec a=vec::get(),b=vec::get();
@@ -101,9 +109,13 @@ void get_cls(const int edgcnt){ // 根据题目给出的边构建rectilinear blo
 		clss.rbegin()->push_back(eg[i]);
 		for(int id=i,cnt=0; cnt<1e5; ++cnt){ // 防止数据不合法？
 			int curdr=get_dr(eg[id]),res=id;
+			//cerr<<eg[id]<<endl;
+			vis[id]=1;
 			for(int j:vec_idx[eg[id].b]){ // WIP
-				if(eg[j].a!=eg[id].b) continue;
-				if(res==id||((curdr-get_dr(eg[res])+4)&3)>((curdr-get_dr(eg[j])+4)&3))
+				//cerr<<eg[j]<<endl;
+				assert(eg[j].a==eg[id].b);
+				if(vis[j]&&j!=i) continue;
+				if(res==id||((curdr-get_dr(eg[res])+4)&3)<((curdr-get_dr(eg[j])+4)&3))
 					res=j;
 			}
 			assert(res!=id);
@@ -133,10 +145,22 @@ void insert_mod(cls_s &cl,vec rct,vec pos){
 }
 
 int main(){
+	// 输入：
+	// 第一行输入有多少条边界e和多少个模块m
+	// 接下来e行输入每条边（向量）的起止坐标x1,y1,x2,y2和空白区域的位置在向量的左边还是右边，左边为0右边为1
+	// 接下来m行每行输入两个数，代表该模块的长和宽
+	// 输出：
+	// 共m行，每行输出该模块摆放位置的对角端点
 	int edgcnt,modcnt;
 	cin>>edgcnt>>modcnt;
 	get_cls(edgcnt);
-	while(modcnt--){
+	for(cls_s cl:clss){
+		for(edg e:cl){
+			cout<<e.a<<"->"<<e.b<<endl;
+		}
+		cout<<"---"<<endl;
+	}
+	for(int i=1; i<=modcnt; ++i){
 		vec v=vec::get(),tgt=vec::get(),pos;//返回最优位置的中心？
 		double res=1e18;
 		bool rot;
@@ -158,6 +182,7 @@ int main(){
 		assert(res<1e18);
 		if(rot) v=(vec){v.y,v.x};
 		insert_mod(*best_cl,v,pos);
+		cout<<i<<": "<<pos<<' '<<pos+v<<endl;
 	}
 	return 0;
 }
