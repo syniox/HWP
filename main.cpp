@@ -19,6 +19,7 @@ struct edg{ // 边，a为起点，b为终点，合法区域在这个边向量的
 struct mdl{ // module, 记录该模块长方形的四个顶点，保证连续
 	vec v[4];
 	inline vec cntr();//返回中心位置
+	inline void flip();
 };
 
 using cls_s=vector<edg>;
@@ -69,6 +70,11 @@ int edg::dr(){ // 返回向量方向，右0上1左2下3
 
 inline vec mdl::cntr(){
 	return (v[0]+v[1]+v[2]+v[3])*0.25;
+}
+inline void mdl::flip(){
+	for(int i=0; i<4; ++i){
+		swap(v[i].x,v[i].y);
+	}
 }
 
 bool valid(mdl a,cls_s &cl){
@@ -151,16 +157,26 @@ bool on_edge(const edg &e,const mdl &m){
 	return cnt==2;
 }
 
-mdl get_great_pos(vec rct,cls_s &cl){//寻找某个闭包的最优位置
-	//rct描述长宽，cl表示搜寻的闭包
-	//rot记录是否旋转90度，函数返回中心位置
+mdl get_great_pos_basic(vec rct,cls_s &cl){//横向
+
 }
 
-void insert_mdl(cls_s &cl,mdl md){//将该区域设为不可用区域（假设该模块紧贴边缘）
+mdl get_great_pos(vec rct,cls_s &cl){// 寻找某个闭包的最优位置
+	// cl表示搜寻的闭包
+	// 函数返回模块最后占用的位置
+	for(edg e:cl){
+	}
+}
+
+void insert_mdl(cls_s &cl,mdl md){// 将该区域设为不可用区域（假设该模块紧贴边缘）
 
 }
 
 int main(){
+	// 输入格式：
+	// 第一行输入空白区域数量n和模块数量m
+	// 接下来n行，每行第一个数是e，表示该空白区域的边界点数；接下来2e个数，依次表示边界上逆时针顺序的点的坐标；
+	// 接下来m行，每行4个数w, h, x, y，表示矩形的最佳位置是(x,y)到(x+w, y+h)画出的矩形。
 	// 输入：
 	// 第一行输入有多少条边界e和多少个模块m
 	// 接下来e行输入每条边（向量）的起止坐标x1,y1,x2,y2和空白区域的位置在向量的左边还是右边，左边为0右边为1
