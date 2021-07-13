@@ -203,16 +203,20 @@ mdl get_great_pos_basic(const vec rct,cls_s &cl,const vec tgt,const bool fliped)
 				}
 			}
 		}
-		vector<pdd>::iterator it1=neo_seg.begin(),it2=it1;
-		++it2;
-		double line_y=cur_e.a.y+rct.y*(0.5-((cur_e.dr()==2)^fliped));
 		double a=min(cur_e.a.x,cur_e.b.x);
 		double b=max(cur_e.a.x,cur_e.b.x);
-		update_gpos(gpos,a,min(b,it1->first),rct,tgt,line_y);
-		for(; it2!=neo_seg.end(); ++it1,++it2){
-			double l=max(a,it1->second);
-			double r=min(b,it2->first);
-			update_gpos(gpos,l,r,rct,tgt,line_y);
+		double line_y=cur_e.a.y+rct.y*(0.5-((cur_e.dr()==2)^fliped));
+		if(neo_seg.empty()){
+			update_gpos(gpos,a,b,rct,tgt,line_y);
+		}else{
+			vector<pdd>::iterator it1=neo_seg.begin(),it2=it1;
+			++it2;
+			update_gpos(gpos,a,min(b,it1->first),rct,tgt,line_y);
+			for(; it2!=neo_seg.end(); ++it1,++it2){
+				double l=max(a,it1->second);
+				double r=min(b,it2->first);
+				update_gpos(gpos,l,r,rct,tgt,line_y);
+			}
 		}
 	}
 	return gpos;
