@@ -255,6 +255,40 @@ bool on_edge(const edg &e,const mdl &m){
 
 void insert_mdl(cls_s &cl,mdl md){// 将该区域设为不可用区域（假设该模块紧贴边缘）
 	using cls_i=cls_s::iterator;
+	for(cls_i it=cl.begin(); it!=cl.end(); ++it){
+		edg e=*it;
+		if(!on_edge(e,md)) continue;
+		bool fliped=0;
+		if(e.dr()&1){
+			fliped=1;
+			flip_vec(cl);
+			md.flip();
+			e.flip();
+		}
+		double st_x,ed_x,other_y;
+		for(int i=0; i<4; ++i){
+			if(cabs(md.v[i].y-e.a.y)>eps){
+				other_y=md.v[i].y;
+			}
+			if(md.v[i].x-e.a.x<md.v[i^3].x-e.a.x){
+				st_x=md.v[i].x;
+				ed_x=md.v[i^3].x;
+			}
+		}
+		vec p0=(vec){st_x,e.a.y},p1=(vec){st_x,other_y};
+		vec p2=(vec){ed_x,other_y},p3=(vec){ed_x,e.a.y};
+		it->b=p0;
+		++it;
+		it=cl.insert(it,(edg){p0,p1});
+		it=cl.insert(it,(edg){p1,p2});
+		it=cl.insert(it,(edg){p2,p3});
+		it=cl.insert(it,(edg){p3,e.b});
+		if(fliped){
+			flip_vec(cl);
+		}
+		return;
+	}
+	assert(0);
 	/*
 	vector <edg*> bkg; // TODO safe enough?
 	for(edg &e:cl){
@@ -270,6 +304,7 @@ void insert_mdl(cls_s &cl,mdl md){// 将该区域设为不可用区域（假设�
 		exit(1);
 	}
 	*/
+	/*
 	int sz=cl.size(),l=-1,r=-1;
 	for(int i=0; i<sz; ++i){
 		if(on_edge(cl[i],md)){
@@ -288,6 +323,7 @@ void insert_mdl(cls_s &cl,mdl md){// 将该区域设为不可用区域（假设�
 		cerr<<"unimplemented"<<endl;
 		exit(1);
 	}
+	*/
 }
 
 int main(){
