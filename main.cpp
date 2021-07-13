@@ -159,28 +159,27 @@ const T cabs(const T &x){
 double get_dis(const vec &a,const vec &b){
 	return cabs(a.x-b.x)+cabs(a.y-b.y);
 }
-bool on_edge(const edg &e,const vec &p){
-	if(e.a.x==e.b.x) return cabs(p.x-e.a.x)<eps;
-	return cabs(p.y-e.a.y)<eps;
-}
-bool on_edge(const edg &e,const mdl &m){
-	int cnt=0;
-	for(int i=0; i<4; ++i){
-		cnt+=on_edge(e,m.v[i]);
-	}
-	assert(cnt==0||cnt==2);
-	return cnt==2;
-}
 template <typename T>
 void flip_vec(vector <T> vt){
 	for(T &x:vt) x.flip();
 }
 
-mdl get_great_pos_basic(vec rct,cls_s &cl,vec tgt){//横向
+void update_gpos(mdl &gpos,double l,double r,const vec rct,const vec tgt,const double line_y){
+	if(r-l<rct.x) return;
+	double x,rad_x=rct.x*0.5;
+	if(r<tgt.x-rad_x) x=r-rad_x;
+	else if(l>tgt.x+rad_x) x=l+rad_x;
+	else x=tgt.x;
+	mdl neo=mdl::build((vec){x,line_y},rct);
+	if(get_dis(neo.cntr(),tgt)<get_dis(gpos.cntr(),tgt)){
+		gpos=neo;
+	}
+}
+
+mdl get_great_pos_basic(const vec rct,cls_s &cl,const vec tgt,const bool fliped){//横向，坐标系是否经过变换
 	using pdd=std::pair<double,double>;
 	vector<pdd> invalid_seg,neo_seg;
 	mdl gpos; // great pos
-	double res=1e18,rad_x=rct.x*0.5;// x方向半径
 	for(edg cur_e:cl){
 		if(cur_e.dr()&1) continue; // 保证横向
 		invalid_seg.clear();
@@ -206,22 +205,14 @@ mdl get_great_pos_basic(vec rct,cls_s &cl,vec tgt){//横向
 		}
 		vector<pdd>::iterator it1=neo_seg.begin(),it2=it1;
 		++it2;
-		double line_y=cur_e.a.y+rct.y*(0.5-(cur_e.dr()==2));
+		double line_y=cur_e.a.y+rct.y*(0.5-((cur_e.dr()==2)^fliped));
+		double a=min(cur_e.a.x,cur_e.b.x);
+		double b=max(cur_e.a.x,cur_e.b.x);
+		update_gpos(gpos,a,min(b,it1->first),rct,tgt,line_y);
 		for(; it2!=neo_seg.end(); ++it1,++it2){
-			double a=min(cur_e.a.x,cur_e.b.x);
-			double b=max(cur_e.a.x,cur_e.b.x);
 			double l=max(a,it1->second);
 			double r=min(b,it2->first);
-			if(r-l<rad_x*2) continue;
-			double x,cur_res;
-			if(r<tgt.x-rad_x) x=r-rad_x;
-			else if(l>tgt.x+rad_x) x=l+rad_x;
-			else x=tgt.x;
-			cur_res=get_dis((vec){x,line_y},tgt);
-			if(cur_res<res){
-				res=cur_res;
-				gpos=mdl::build((vec){x,line_y},rct);
-			}
+			update_gpos(gpos,l,r,rct,tgt,line_y);
 		}
 	}
 	return gpos;
@@ -231,13 +222,13 @@ mdl get_great_pos(vec rct,cls_s &cl,vec tgt){// 寻找某个闭包的最优位�
 	// cl表示搜寻的闭包
 	// 函数返回模块最后占用的位置
 	mdl mpos[4];
-	mpos[0]=get_great_pos_basic(rct,cl,tgt); // 横着的原矩阵 横向rb
+	mpos[0]=get_great_pos_basic(rct,cl,tgt,0); // 横着的原矩阵 横向rb
 	rct.flip();
-	mpos[1]=get_great_pos_basic(rct,cl,tgt); // 竖着的原矩阵 横向rb
+	mpos[1]=get_great_pos_basic(rct,cl,tgt,0); // 竖着的原矩阵 横向rb
 	flip_vec(cl);
-	mpos[2]=get_great_pos_basic(rct,cl,tgt); // 横着的原矩阵 竖向rb（坐标系颠倒）
+	mpos[2]=get_great_pos_basic(rct,cl,tgt,1); // 横着的原矩阵 竖向rb（坐标系颠倒）
 	rct.flip();
-	mpos[3]=get_great_pos_basic(rct,cl,tgt); // 竖着的原矩阵 竖向rb（坐标系颠倒）
+	mpos[3]=get_great_pos_basic(rct,cl,tgt,1); // 竖着的原矩阵 竖向rb（坐标系颠倒）
 	flip_vec(cl);
 	mpos[2].flip(),mpos[3].flip();
 	mdl pos=mpos[0];
@@ -249,8 +240,54 @@ mdl get_great_pos(vec rct,cls_s &cl,vec tgt){// 寻找某个闭包的最优位�
 	return pos;
 }
 
-void insert_mdl(cls_s &cl,mdl md){// 将该区域设为不可用区域（假设该模块紧贴边缘）
+bool on_edge(const edg &e,const vec &p){
+	if(e.a.x==e.b.x) return cabs(p.x-e.a.x)<eps;
+	return cabs(p.y-e.a.y)<eps;
+}
+bool on_edge(const edg &e,const mdl &m){
+	int cnt=0;
+	for(int i=0; i<4; ++i){
+		cnt+=on_edge(e,m.v[i]);
+	}
+	assert(cnt==0||cnt==2);
+	return cnt==2;
+}
 
+void insert_mdl(cls_s &cl,mdl md){// 将该区域设为不可用区域（假设该模块紧贴边缘）
+	using cls_i=cls_s::iterator;
+	/*
+	vector <edg*> bkg; // TODO safe enough?
+	for(edg &e:cl){
+		if(on_edge(e,md)) bkg.push_back(&e);
+	}
+	assert(bkg.size()>0&&bkg.size()<=4);
+	if(bkg.size()==1){
+		edg &e=**(bkg.begin());
+	}else if(bkg.size()==2){
+		edg &e1=**(bkg.begin()),&e2=**(bkg.begin());
+	}else{
+		cerr<<"unimplemented"<<endl;
+		exit(1);
+	}
+	*/
+	int sz=cl.size(),l=-1,r=-1;
+	for(int i=0; i<sz; ++i){
+		if(on_edge(cl[i],md)){
+			assert(l==-1);
+			l=i;
+			for(r=l+1; r<sz&&on_edge(cl[r],md); ++r);
+			i=r--;
+		}
+	}
+	assert(l!=-1);
+	if(l==r){
+		cls_i it=cl.begin()+l;
+	}else if(r==l+1){
+
+	}else{
+		cerr<<"unimplemented"<<endl;
+		exit(1);
+	}
 }
 
 int main(){
