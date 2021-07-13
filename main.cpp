@@ -14,9 +14,11 @@ struct vec{ // 向量
 };
 struct edg{ // 边，a为起点，b为终点，合法区域在这个边向量的左边
 	vec a,b;
+	inline int dr();
 };
-struct rect4{ // rectangle, 长方形的四个顶点
+struct mdl{ // module, 记录该模块长方形的四个顶点，保证连续
 	vec v[4];
+	inline vec cntr();//返回中心位置
 };
 
 using cls_s=vector<edg>;
@@ -59,14 +61,17 @@ std::ostream& operator << (std::ostream &out,const edg &e){
 bool crossed(const edg &a,const edg &b){ // 线段是否相交，重合情况不考虑
 	return ((b.a-a.a)*(a.b-a.a))*((b.b-a.a)*(a.b-a.a))<-eps;
 }
-
-int get_dr(const edg &e){ // 返回向量方向，右0上1左2下3
-	assert(e.a.x==e.b.x||e.a.y==e.b.y);
-	if(e.a.y==e.b.y) return (e.a.x>e.b.x)<<1;
-	else return (e.a.x>e.b.x)<<1|1;
+int edg::dr(){ // 返回向量方向，右0上1左2下3
+	assert(a.x==b.x||a.y==b.y);
+	if(a.y==b.y) return (a.x>b.x)<<1;
+	else return (a.x>b.x)<<1|1;
 }
 
-bool valid(rect4 a,cls_s &cl){
+inline vec mdl::cntr(){
+	return (v[0]+v[1]+v[2]+v[3])*0.25;
+}
+
+bool valid(mdl a,cls_s &cl){
 	for(edg v:cl){
 		for(int i=0; i<4; ++i){
 			if(crossed((edg){a.v[i],a.v[(i+1)&3]},v))
@@ -108,14 +113,14 @@ void get_cls(const int edgcnt){ // 根据题目给出的边构建rectilinear blo
 		clss.push_back(cls_s());
 		clss.rbegin()->push_back(eg[i]);
 		for(int id=i,cnt=0; cnt<1e5; ++cnt){ // 防止数据不合法？
-			int curdr=get_dr(eg[id]),res=id;
+			int curdr=eg[id].dr(),res=id;
 			//cerr<<eg[id]<<endl;
 			vis[id]=1;
 			for(int j:vec_idx[eg[id].b]){ // WIP
 				//cerr<<eg[j]<<endl;
 				assert(eg[j].a==eg[id].b);
 				if(vis[j]&&j!=i) continue;
-				if(res==id||((curdr-get_dr(eg[res])+4)&3)<((curdr-get_dr(eg[j])+4)&3))
+				if(res==id||((curdr-eg[res].dr()+4)&3)<((curdr-eg[j].dr()+4)&3))
 					res=j;
 			}
 			assert(res!=id);
@@ -133,14 +138,25 @@ const T cabs(const T &x){
 double get_dis(const vec &a,const vec &b){
 	return cabs(a.x-b.x)+cabs(a.y-b.y);
 }
-
-vec get_great_pos(vec rct,cls_s &cl,bool &rot){//寻找某个闭包的最优位置
-	//rct描述长宽，cl表示搜寻的闭包
-	//rot记录是否旋转90度，函数返回中心位置
-
+bool on_edge(const edg &e,const vec &p){
+	if(e.a.x==e.b.x) return cabs(p.x-e.a.x)<eps;
+	return cabs(p.y-e.a.y)<eps;
+}
+bool on_edge(const edg &e,const mdl &m){
+	int cnt=0;
+	for(int i=0; i<4; ++i){
+		cnt+=on_edge(e,m.v[i]);
+	}
+	assert(cnt==0||cnt==2);
+	return cnt==2;
 }
 
-void insert_mod(cls_s &cl,vec rct,vec pos){
+mdl get_great_pos(vec rct,cls_s &cl){//寻找某个闭包的最优位置
+	//rct描述长宽，cl表示搜寻的闭包
+	//rot记录是否旋转90度，函数返回中心位置
+}
+
+void insert_mdl(cls_s &cl,mdl md){//将该区域设为不可用区域（假设该模块紧贴边缘）
 
 }
 
@@ -148,41 +164,34 @@ int main(){
 	// 输入：
 	// 第一行输入有多少条边界e和多少个模块m
 	// 接下来e行输入每条边（向量）的起止坐标x1,y1,x2,y2和空白区域的位置在向量的左边还是右边，左边为0右边为1
-	// 接下来m行每行输入两个数，代表该模块的长和宽
+	// 接下来m行每行输入4个数，代表该模块的长和宽，最优位置中心的x坐标和y坐标
 	// 输出：
 	// 共m行，每行输出该模块摆放位置的对角端点
-	int edgcnt,modcnt;
-	cin>>edgcnt>>modcnt;
+	int edgcnt,mdlcnt;
+	cin>>edgcnt>>mdlcnt;
 	get_cls(edgcnt);
-	for(cls_s cl:clss){
+	/*for(cls_s cl:clss){
 		for(edg e:cl){
 			cout<<e.a<<"->"<<e.b<<endl;
 		}
 		cout<<"---"<<endl;
-	}
-	for(int i=1; i<=modcnt; ++i){
-		vec v=vec::get(),tgt=vec::get(),pos;//返回最优位置的中心？
+	}*/
+	for(int i=1; i<=mdlcnt; ++i){
+		vec v=vec::get(),tgt=vec::get();//返回最优位置的中心？
 		double res=1e18;
-		bool rot;
 		cls_s *best_cl;
+		mdl mpos;
 		for(cls_s &cl:clss){
-			bool cur_rot;
-			vec vpos=get_great_pos(v,cl,cur_rot),center;
-			if(cur_rot==1){
-				center=(vec){vpos.x+v.y*0.5,vpos.y+v.x*0.5};
-			}else{
-				center=vpos+v*0.5;
-			}
-			if(get_dis(center,tgt)<res){
+			mdl cur=get_great_pos(v,cl);
+			double tmp_res=get_dis(cur.cntr(),tgt);
+			if(tmp_res<res){
 				best_cl=&cl;
-				rot=cur_rot;
-				pos=vpos;
+				mpos=cur;
 			}
 		}
 		assert(res<1e18);
-		if(rot) v=(vec){v.y,v.x};
-		insert_mod(*best_cl,v,pos);
-		cout<<i<<": "<<pos<<' '<<pos+v<<endl;
+		insert_mdl(*best_cl,mpos);
+		cout<<i<<": "<<mpos.v[0]<<' '<<mpos.v[2]<<endl;
 	}
 	return 0;
 }
