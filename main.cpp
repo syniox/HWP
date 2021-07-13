@@ -24,6 +24,8 @@ struct mdl{ // module, 记录该模块长方形的四个顶点，保证连续
 	vec v[4];
 	inline vec cntr();//返回中心位置
 	inline void flip();
+	inline void set_inf();
+	static mdl build(const vec &ctr,const vec &rct);
 };
 
 using cls_s=vector<edg>;
@@ -86,16 +88,20 @@ inline void mdl::flip(){
 		std::swap(v[i].x,v[i].y);
 	}
 }
-
-bool valid(mdl a,cls_s &cl){
-	for(edg v:cl){
-		for(int i=0; i<4; ++i){
-			if(crossed((edg){a.v[i],a.v[(i+1)&3]},v))
-				return 0;
-		}
+inline void mdl::set_inf(){
+	for(int i=0; i<4; ++i){
+		v[i].x=v[i].y=-1e12;
 	}
-	return 1;
 }
+inline mdl mdl::build(const vec &ctr,const vec &rct){
+	mdl m;
+	m.v[0]=(vec){ctr.x-rct.x,ctr.y-rct.y};
+	m.v[1]=(vec){ctr.x-rct.x,ctr.y+rct.y};
+	m.v[2]=(vec){ctr.x+rct.x,ctr.y+rct.y};
+	m.v[3]=(vec){ctr.x+rct.x,ctr.y-rct.y};
+	return m;
+}
+
 
 void add_edg(vector<edg> &eg,map<vec,std::vector<int>> &vec_idx,vec a,vec b){
 	eg.push_back((edg){a,b});
@@ -170,11 +176,11 @@ void flip_vec(vector <T> vt){
 	for(T &x:vt) x.flip();
 }
 
-mdl get_great_pos_basic(vec rct,cls_s &cl){//横向
+mdl get_great_pos_basic(vec rct,cls_s &cl,vec tgt){//横向
 	using pdd=std::pair<double,double>;
 	vector<pdd> invalid_seg,neo_seg;
 	mdl gpos; // great pos
-	double res;
+	double res=1e18,rad_x=rct.x*0.5;// x方向半径
 	for(edg cur_e:cl){
 		if(cur_e.dr()&1) continue; // 保证横向
 		invalid_seg.clear();
@@ -192,33 +198,46 @@ mdl get_great_pos_basic(vec rct,cls_s &cl){//横向
 			for(pdd pr:invalid_seg){
 				if(end<pr.first){
 					if(end>-1e18) neo_seg.push_back(std::make_pair(start,end));
-					start=pr.first,end=pr.end;
+					start=pr.first,end=pr.second;
 				}else{
-					end=std::max(end,pr.end);
+					end=std::max(end,pr.second);
 				}
 			}
 		}
 		vector<pdd>::iterator it1=neo_seg.begin(),it2=it1;
 		++it2;
+		double line_y=cur_e.a.y+rct.y*(0.5-(cur_e.dr()==2));
 		for(; it2!=neo_seg.end(); ++it1,++it2){
-			int a=min(cur_e.a.x,cur_e.b.x),b=a^cur_e.a.x^cur_e.b.x;
-			int l=max(a,it1->second);
-			int r=min(b,it2->first);
+			double a=min(cur_e.a.x,cur_e.b.x);
+			double b=max(cur_e.a.x,cur_e.b.x);
+			double l=max(a,it1->second);
+			double r=min(b,it2->first);
+			if(r-l<rad_x*2) continue;
+			double x,cur_res;
+			if(r<tgt.x-rad_x) x=r-rad_x;
+			else if(l>tgt.x+rad_x) x=l+rad_x;
+			else x=tgt.x;
+			cur_res=get_dis((vec){x,line_y},tgt);
+			if(cur_res<res){
+				res=cur_res;
+				gpos=mdl::build((vec){x,line_y},rct);
+			}
 		}
 	}
+	return gpos;
 }
 
 mdl get_great_pos(vec rct,cls_s &cl,vec tgt){// 寻找某个闭包的最优位置
 	// cl表示搜寻的闭包
 	// 函数返回模块最后占用的位置
 	mdl mpos[4];
-	mpos[0]=get_great_pos_basic(rct,cl); // 横着的原矩阵 横向rb
+	mpos[0]=get_great_pos_basic(rct,cl,tgt); // 横着的原矩阵 横向rb
 	rct.flip();
-	mpos[1]=get_great_pos_basic(rct,cl); // 竖着的原矩阵 横向rb
+	mpos[1]=get_great_pos_basic(rct,cl,tgt); // 竖着的原矩阵 横向rb
 	flip_vec(cl);
-	mpos[2]=get_great_pos_basic(rct,cl); // 横着的原矩阵 竖向rb（坐标系颠倒）
+	mpos[2]=get_great_pos_basic(rct,cl,tgt); // 横着的原矩阵 竖向rb（坐标系颠倒）
 	rct.flip();
-	mpos[3]=get_great_pos_basic(rct,cl); // 竖着的原矩阵 竖向rb（坐标系颠倒）
+	mpos[3]=get_great_pos_basic(rct,cl,tgt); // 竖着的原矩阵 竖向rb（坐标系颠倒）
 	flip_vec(cl);
 	mpos[2].flip(),mpos[3].flip();
 	mdl pos=mpos[0];
