@@ -2,8 +2,9 @@
 #include <vector>
 #include <cassert>
 #include <algorithm>
+#include <cairo/cairo.h>
 #include <map>
-static const int eps=1e-6;
+static const double eps=1e-6;
 using std::cin; using std::cout; using std::cerr; using std::endl;
 using std::min; using std::max;
 using std::vector;
@@ -109,7 +110,21 @@ void add_edg(vector<edg> &eg,map<vec,std::vector<int>> &vec_idx,vec a,vec b){
 	vec_idx[a].push_back(eg.size()-1);
 }
 
-void get_cls(const int edgcnt){ // 根据题目给出的边构建rectilinear block
+void draw_line(cairo_t *cr,vec a,vec b){
+	cairo_set_source_rgba(cr,0.8,0.1,0.3,1.0);
+	cairo_set_line_width(cr,1);
+	cairo_move_to(cr,a.x*10,a.y*10);
+	cairo_line_to(cr,b.x*10,b.y*10);
+	cairo_stroke(cr);
+}
+void draw_mdl(cairo_t *cr,mdl m,double r=0.4,double g=0.4,double b=0.4){
+	cairo_set_source_rgba(cr,r,g,b,1.0);
+	double x=m.v[0].x,y=m.v[0].y,dx=m.v[2].x-x,dy=m.v[2].y-y;
+	cairo_rectangle(cr,x*10,y*10,dx*10,dy*10);
+	cairo_fill(cr);
+}
+
+void get_cls(const int edgcnt,cairo_t *cr){ // 根据题目给出的边构建rectilinear block
 	vector<edg> eg;
 	map<vec,vector<int>> vec_idx;
 	vector<bool> vis;
@@ -117,6 +132,7 @@ void get_cls(const int edgcnt){ // 根据题目给出的边构建rectilinear blo
 		vec a=vec::get(),b=vec::get();
 		cin>>dir;
 		if(dir) std::swap(a,b);
+		draw_line(cr,a,b);
 		if(a.x==b.x||a.y==b.y){
 			add_edg(eg,vec_idx,a,b);
 		}else{
@@ -136,10 +152,8 @@ void get_cls(const int edgcnt){ // 根据题目给出的边构建rectilinear blo
 		clss.rbegin()->push_back(eg[i]);
 		for(int id=i,cnt=0; cnt<1e5; ++cnt){ // 防止数据不合法？
 			int curdr=eg[id].dr(),res=id;
-			//cerr<<eg[id]<<endl;
 			vis[id]=1;
 			for(int j:vec_idx[eg[id].b]){ // WIP
-				//cerr<<eg[j]<<endl;
 				assert(eg[j].a==eg[id].b);
 				if(vis[j]&&j!=i) continue;
 				if(res==id||((curdr-eg[res].dr()+4)&3)<((curdr-eg[j].dr()+4)&3))
@@ -194,23 +208,24 @@ mdl get_great_pos_basic(const vec rct,cls_s &cl,const vec tgt,const bool fliped)
 				invalid_seg.push_back(std::make_pair(a,b));
 			}
 		}
-		{
-			double end=-1e18,start;
-			for(pdd pr:invalid_seg){
-				if(end<pr.first){
-					if(end>-1e18) neo_seg.push_back(std::make_pair(start,end));
-					start=pr.first,end=pr.second;
-				}else{
-					end=std::max(end,pr.second);
-				}
-			}
-		}
 		double a=min(cur_e.a.x,cur_e.b.x);
 		double b=max(cur_e.a.x,cur_e.b.x);
 		double line_y=cur_e.a.y+rct.y*(0.5-((cur_e.dr()==2)^fliped));
-		if(neo_seg.empty()){
+		if(invalid_seg.empty()){
 			update_gpos(gpos,a,b,rct,tgt,line_y);
 		}else{
+			{
+				double end=-1e18,start;
+				for(pdd pr:invalid_seg){
+					if(end<pr.first){
+						if(end>-1e18) neo_seg.push_back(std::make_pair(start,end));
+						start=pr.first,end=pr.second;
+					}else{
+						end=std::max(end,pr.second);
+					}
+				}
+				neo_seg.push_back(std::make_pair(start,end));
+			}
 			vector<pdd>::iterator it1=neo_seg.begin(),it2=it1;
 			++it2;
 			update_gpos(gpos,a,min(b,it1->first),rct,tgt,line_y);
@@ -295,41 +310,6 @@ void insert_mdl(cls_s &cl,mdl md){// 将该区域设为不可用区域（假设�
 		return;
 	}
 	assert(0);
-	/*
-	vector <edg*> bkg; // TODO safe enough?
-	for(edg &e:cl){
-		if(on_edge(e,md)) bkg.push_back(&e);
-	}
-	assert(bkg.size()>0&&bkg.size()<=4);
-	if(bkg.size()==1){
-		edg &e=**(bkg.begin());
-	}else if(bkg.size()==2){
-		edg &e1=**(bkg.begin()),&e2=**(bkg.begin());
-	}else{
-		cerr<<"unimplemented"<<endl;
-		exit(1);
-	}
-	*/
-	/*
-	int sz=cl.size(),l=-1,r=-1;
-	for(int i=0; i<sz; ++i){
-		if(on_edge(cl[i],md)){
-			assert(l==-1);
-			l=i;
-			for(r=l+1; r<sz&&on_edge(cl[r],md); ++r);
-			i=r--;
-		}
-	}
-	assert(l!=-1);
-	if(l==r){
-		cls_i it=cl.begin()+l;
-	}else if(r==l+1){
-
-	}else{
-		cerr<<"unimplemented"<<endl;
-		exit(1);
-	}
-	*/
 }
 
 int main(){
@@ -343,18 +323,17 @@ int main(){
 	// 接下来m行每行输入4个数，代表该模块的长和宽，最优位置中心的x坐标和y坐标
 	// 输出：
 	// 共m行，每行输出该模块摆放位置的对角端点
+
+	cairo_surface_t *surface;
+	surface=cairo_image_surface_create(CAIRO_FORMAT_ARGB32,400,400);
+	cairo_t *cr=cairo_create(surface);
+
 	int edgcnt,mdlcnt;
 	cin>>edgcnt>>mdlcnt;
-	get_cls(edgcnt);
-	/*for(cls_s cl:clss){
-		for(edg e:cl){
-			cout<<e.a<<"->"<<e.b<<endl;
-		}
-		cout<<"---"<<endl;
-	}*/
+	get_cls(edgcnt,cr);
 	for(int i=1; i<=mdlcnt; ++i){
 		vec v=vec::get(),tgt=vec::get();//返回最优位置的中心？
-		double res=1e18;
+		double res=1e12;
 		cls_s *best_cl;
 		mdl mpos;
 		for(cls_s &cl:clss){
@@ -366,9 +345,17 @@ int main(){
 				mpos=cur;
 			}
 		}
-		assert(res<1e18);
+		if(res==1e12){
+			cerr<<"no solution"<<endl;
+			cairo_surface_destroy(surface);
+			return 1;
+		}
 		insert_mdl(*best_cl,mpos);
 		cout<<i<<": "<<mpos.v[0]<<' '<<mpos.v[2]<<endl;
+		draw_mdl(cr,mpos);
 	}
+
+	cairo_surface_write_to_png(surface,"test.png");
+	cairo_surface_destroy(surface);
 	return 0;
 }
