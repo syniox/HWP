@@ -94,11 +94,12 @@ inline void mdl::set_inf(){
 	}
 }
 inline mdl mdl::build(const vec &ctr,const vec &rct){
+	double rad_x=rct.x*0.5,rad_y=rct.y*0.5;
 	mdl m;
-	m.v[0]=(vec){ctr.x-rct.x,ctr.y-rct.y};
-	m.v[1]=(vec){ctr.x-rct.x,ctr.y+rct.y};
-	m.v[2]=(vec){ctr.x+rct.x,ctr.y+rct.y};
-	m.v[3]=(vec){ctr.x+rct.x,ctr.y-rct.y};
+	m.v[0]=(vec){ctr.x-rad_x,ctr.y-rad_y};
+	m.v[1]=(vec){ctr.x-rad_x,ctr.y+rad_y};
+	m.v[2]=(vec){ctr.x+rad_x,ctr.y+rad_y};
+	m.v[3]=(vec){ctr.x+rad_x,ctr.y-rad_y};
 	return m;
 }
 
@@ -180,6 +181,7 @@ mdl get_great_pos_basic(const vec rct,cls_s &cl,const vec tgt,const bool fliped)
 	using pdd=std::pair<double,double>;
 	vector<pdd> invalid_seg,neo_seg;
 	mdl gpos; // great pos
+	gpos.set_inf();
 	for(edg cur_e:cl){
 		if(cur_e.dr()&1) continue; // 保证横向
 		invalid_seg.clear();
@@ -359,6 +361,7 @@ int main(){
 			mdl cur=get_great_pos(v,cl,tgt);
 			double tmp_res=get_dis(cur.cntr(),tgt);
 			if(tmp_res<res){
+				res=tmp_res;
 				best_cl=&cl;
 				mpos=cur;
 			}
