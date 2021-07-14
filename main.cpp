@@ -32,6 +32,7 @@ struct mdl{ // module, 记录该模块长方形的四个顶点，保证连续
 using cls_s=vector<edg>;
 
 vector<cls_s> clss; // 闭包集合
+int cairo_x=400,cairo_y=400;
 
 vec vec::get(){
 	double x,y;
@@ -175,15 +176,15 @@ double get_dis(const vec &a,const vec &b){
 	return cabs(a.x-b.x)+cabs(a.y-b.y);
 }
 template <typename T>
-void flip_vec(vector <T> vt){
+void flip_vec(vector <T> &vt){
 	for(T &x:vt) x.flip();
 }
 
 void update_gpos(mdl &gpos,double l,double r,const vec rct,const vec tgt,const double line_y){
 	if(r-l<rct.x) return;
 	double x,rad_x=rct.x*0.5;
-	if(r<tgt.x-rad_x) x=r-rad_x;
-	else if(l>tgt.x+rad_x) x=l+rad_x;
+	if(r<tgt.x+rad_x) x=r-rad_x;
+	else if(l>tgt.x-rad_x) x=l+rad_x;
 	else x=tgt.x;
 	mdl neo=mdl::build((vec){x,line_y},rct);
 	if(get_dis(neo.cntr(),tgt)<get_dis(gpos.cntr(),tgt)){
