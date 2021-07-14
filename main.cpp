@@ -121,7 +121,9 @@ void draw_line(cairo_t *cr,vec a,vec b){
 void draw_mdl(cairo_t *cr,mdl m,double r=0.4,double g=0.4,double b=0.4){
 	cairo_set_source_rgba(cr,r,g,b,1.0);
 	double x=m.v[0].x,y=m.v[0].y,dx=m.v[2].x-x,dy=m.v[2].y-y;
-	cairo_rectangle(cr,x*10,y*10,dx*10,dy*10);
+	if(dx<0) dx=-dx,x-=dx;
+	if(dy<0) dy=-dy,y-=dy;
+	cairo_rectangle(cr,x*10+0.5,y*10+0.5,dx*10-1,dy*10-1);
 	cairo_fill(cr);
 }
 
