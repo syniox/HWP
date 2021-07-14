@@ -292,19 +292,18 @@ void insert_mdl(cls_s &cl,mdl md){// 将该区域设为不可用区域（假设�
 			if(cabs(md.v[i].y-e.a.y)>eps){
 				other_y=md.v[i].y;
 			}
-			if(md.v[i].x-e.a.x<md.v[i^3].x-e.a.x){
+			if(md.v[i].x-e.a.x<md.v[i^2].x-e.a.x){
 				st_x=md.v[i].x;
-				ed_x=md.v[i^3].x;
+				ed_x=md.v[i^2].x;
 			}
 		}
 		vec p0=(vec){st_x,e.a.y},p1=(vec){st_x,other_y};
 		vec p2=(vec){ed_x,other_y},p3=(vec){ed_x,e.a.y};
 		it->b=p0;
-		++it;
-		it=cl.insert(it,(edg){p0,p1});
-		it=cl.insert(it,(edg){p1,p2});
-		it=cl.insert(it,(edg){p2,p3});
-		it=cl.insert(it,(edg){p3,e.b});
+		it=cl.insert(++it,(edg){p0,p1});
+		it=cl.insert(++it,(edg){p1,p2});
+		it=cl.insert(++it,(edg){p2,p3});
+		it=cl.insert(++it,(edg){p3,e.b});
 		if(fliped){
 			flip_vec(cl);
 		}
