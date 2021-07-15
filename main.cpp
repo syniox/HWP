@@ -32,7 +32,7 @@ struct mdl{ // module, 记录该模块长方形的四个顶点，保证连续
 using cls_s=vector<edg>;
 
 vector<cls_s> clss; // 闭包集合
-int cairo_x=400,cairo_y=400;
+int cairo_x=500,cairo_y=500;
 
 vec vec::get(){
 	double x,y;
@@ -242,6 +242,7 @@ mdl get_great_pos_basic(const vec rct,cls_s &cl,const vec tgt,const bool fliped)
 	return gpos;
 }
 
+//TODO: “凹”型图内部决策
 mdl get_great_pos(vec rct,cls_s &cl,vec tgt){// 寻找某个闭包的最优位置
 	// cl表示搜寻的闭包
 	// 函数返回模块最后占用的位置
@@ -277,6 +278,26 @@ bool on_edge(const edg &e,const mdl &m){
 	return cnt==2;
 }
 
+void sanitize_vec(cls_s &cl){
+	cls_s::iterator it1,it2;
+	int cnt=-1;
+	while(cnt){
+		for(it1=cl.begin(); it1!=cl.end(); ++it1){
+			cnt=0;
+			while(it1->a==it1->b){
+				++cnt;
+				it1=cl.erase(it1);
+			}
+			for(; ++(it2=it1)!=cl.end()&&((it1->dr()^it2->dr())&1)==0; ){
+				++cnt;
+				assert(it1->b==it2->a);
+				it1->b=it2->b;
+				it2=cl.erase(it2);
+			}
+		}
+	}
+}
+
 void insert_mdl(cls_s &cl,mdl md){// 将该区域设为不可用区域（假设该模块紧贴边缘）
 	using cls_i=cls_s::iterator;
 	for(cls_i it=cl.begin(); it!=cl.end(); ++it){
@@ -308,6 +329,7 @@ void insert_mdl(cls_s &cl,mdl md){// 将该区域设为不可用区域（假设�
 		it=cl.insert(++it,(edg){p3,e.b});
 		if(fliped){
 			flip_vec(cl);
+			sanitize_vec(cl);
 		}
 		return;
 	}
@@ -327,7 +349,7 @@ int main(){
 	// 共m行，每行输出该模块摆放位置的对角端点
 
 	cairo_surface_t *surface;
-	surface=cairo_image_surface_create(CAIRO_FORMAT_ARGB32,400,400);
+	surface=cairo_image_surface_create(CAIRO_FORMAT_ARGB32,500,500);
 	cairo_t *cr=cairo_create(surface);
 
 	int edgcnt,mdlcnt;
