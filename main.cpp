@@ -75,6 +75,7 @@ bool crossed(const edg &a,const edg &b){ // 线段是否相交，重合情况不
 }
 int edg::dr(){ // 返回向量方向，右0上1左2下3
 	assert(a.x==b.x||a.y==b.y);
+	assert(!(a==b));
 	if(a.y==b.y) return (a.x>b.x)<<1;
 	else return (a.x>b.x)<<1|1;
 }
@@ -282,13 +283,15 @@ void sanitize_vec(cls_s &cl){
 	cls_s::iterator it1,it2;
 	int cnt=-1;
 	while(cnt){
+		cnt=0;
 		for(it1=cl.begin(); it1!=cl.end(); ++it1){
-			cnt=0;
 			while(it1->a==it1->b){
 				++cnt;
 				it1=cl.erase(it1);
 			}
-			for(; ++(it2=it1)!=cl.end()&&((it1->dr()^it2->dr())&1)==0; ){
+			for(; ++(it2=it1)!=cl.end(); ){
+				while(it2->a==it2->b) it2=cl.erase(it2);
+				if((it1->dr()^it2->dr())&1) break;
 				++cnt;
 				assert(it1->b==it2->a);
 				it1->b=it2->b;
@@ -329,8 +332,8 @@ void insert_mdl(cls_s &cl,mdl md){// 将该区域设为不可用区域（假设�
 		it=cl.insert(++it,(edg){p3,e.b});
 		if(fliped){
 			flip_vec(cl);
-			sanitize_vec(cl);
 		}
+		sanitize_vec(cl);
 		return;
 	}
 	assert(0);
