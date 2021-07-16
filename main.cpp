@@ -4,135 +4,26 @@
 #include <algorithm>
 #include <cairo/cairo.h>
 #include <map>
-static const double eps=1e-6;
+#include "draw.h"
+#include "structs.h"
+#include "global.h"
+
 using std::cin; using std::cout; using std::cerr; using std::endl;
 using std::min; using std::max;
 using std::vector;
 using std::map;
 // x,y: 平面直角坐标系
 
-struct vec{ // 向量
-	double x,y;
-	static vec get();
-	inline void flip();
-};
-struct edg{ // 边，a为起点，b为终点，合法区域在这个边向量的左边
-	vec a,b;
-	inline int dr();
-	inline void flip();
-	inline bool ispnt();
-};
-struct mdl{ // module, 记录该模块长方形的四个顶点，保证连续
-	vec v[4];
-	inline vec cntr();//返回中心位置
-	inline void flip();
-	inline void set_inf();
-	static mdl build(const vec &ctr,const vec &rct);
-};
-
 using cls_s=vector<edg>;
 
 vector<cls_s> clss; // 闭包集合
-int cairo_x=500,cairo_y=500;
 
-vec vec::get(){
-	double x,y;
-	cin>>x>>y;
-	return (vec){x,y};
-}
-inline void vec::flip(){
-	std::swap(x,y);
-}
-template <typename T>
-vec operator * (const vec &v,const T x){
-	return (vec){v.x*x,v.y*x};
-}
-double operator *(const vec &a,const vec &b){
-	return a.x*b.y-a.y*b.x;
-}
-vec operator + (const vec &a,const vec &b){
-	return (vec){a.x+b.x,a.y+b.y};
-}
-vec operator - (const vec &a,const vec &b){
-	return (vec){a.x-b.x,a.y-b.y};
-}
-bool operator < (const vec &a,const vec &b){
-	return a.x==b.x?a.y<b.y:a.x<b.x;
-}
-bool operator == (const vec &a,const vec &b){
-	return a.x==b.x&&a.y==b.y;
-}
-std::ostream& operator << (std::ostream &out,const vec &v){
-	out<<'('<<v.x<<' '<<v.y<<')';
-	return out;
-}
-std::ostream& operator << (std::ostream &out,const edg &e){
-	out<<e.a<<"->"<<e.b;
-	return out;
-}
-
-bool crossed(const edg &a,const edg &b){ // 线段是否相交，重合情况不考虑
-	return ((b.a-a.a)*(a.b-a.a))*((b.b-a.a)*(a.b-a.a))<-eps;
-}
-int edg::dr(){ // 返回向量方向，右0上1左2下3
-	assert(a.x==b.x||a.y==b.y);
-	assert(!(a==b));
-	if(a.y==b.y) return (a.x>b.x)<<1;
-	else return (a.x>b.x)<<1|1;
-}
-inline void edg::flip(){
-	a.flip(),b.flip();
-}
-inline bool edg::ispnt(){
-	return a==b;
-}
-
-inline vec mdl::cntr(){
-	return (v[0]+v[1]+v[2]+v[3])*0.25;
-}
-inline void mdl::flip(){
-	for(int i=0; i<4; ++i){
-		std::swap(v[i].x,v[i].y);
-	}
-}
-inline void mdl::set_inf(){
-	for(int i=0; i<4; ++i){
-		v[i].x=v[i].y=-1e12;
-	}
-}
-inline mdl mdl::build(const vec &ctr,const vec &rct){
-	double rad_x=rct.x*0.5,rad_y=rct.y*0.5;
-	mdl m;
-	m.v[0]=(vec){ctr.x-rad_x,ctr.y-rad_y};
-	m.v[1]=(vec){ctr.x-rad_x,ctr.y+rad_y};
-	m.v[2]=(vec){ctr.x+rad_x,ctr.y+rad_y};
-	m.v[3]=(vec){ctr.x+rad_x,ctr.y-rad_y};
-	return m;
-}
-
-
-void add_edg(vector<edg> &eg,map<vec,std::vector<int>> &vec_idx,vec a,vec b){
+void add_edg(cls_s &eg,map<vec,std::vector<int>> &vec_idx,vec a,vec b){
 	eg.push_back((edg){a,b});
 	vec_idx[a].push_back(eg.size()-1);
 }
 
-void draw_line(cairo_t *cr,vec a,vec b){
-	cairo_set_source_rgba(cr,0.8,0.1,0.3,1.0);
-	cairo_set_line_width(cr,1);
-	cairo_move_to(cr,a.x*10,a.y*10);
-	cairo_line_to(cr,b.x*10,b.y*10);
-	cairo_stroke(cr);
-}
-void draw_mdl(cairo_t *cr,mdl m,double r=0.4,double g=0.4,double b=0.4){
-	cairo_set_source_rgba(cr,r,g,b,1.0);
-	double x=m.v[0].x,y=m.v[0].y,dx=m.v[2].x-x,dy=m.v[2].y-y;
-	if(dx<0) dx=-dx,x-=dx;
-	if(dy<0) dy=-dy,y-=dy;
-	cairo_rectangle(cr,x*10+0.5,y*10+0.5,dx*10-1,dy*10-1);
-	cairo_fill(cr);
-}
-
-void get_cls(const int edgcnt,cairo_t *cr){ // 根据题目给出的边构建rectilinear block
+void get_cls(const int edgcnt,vector<cls_s> clss,cairo_t *cr){ // 根据题目给出的边构建rectilinear block
 	vector<edg> eg;
 	map<vec,vector<int>> vec_idx;
 	vector<bool> vis;
@@ -303,25 +194,6 @@ void sanitize_vec(cls_s &cl){
 			}
 		}
 	}
-	/*
-	for(; it<(int)cl.size(); ++it){
-		cl[++it1]=cl[it];
-		for(; it1>=0; --it1){
-			if(it1==0){
-				if(cl[it1].ispnt()) continue;
-				break;
-			}
-			if(cl[it1].ispnt()) continue;
-			it2=it1-1;
-			assert(!cl[it2].ispnt());
-			if((cl[it2].dr()^cl[it1].dr())&1) break;
-			assert(cl[it2].b==cl[it1].a);
-			cl[it2].b=cl[it1].b;
-		}
-	}
-	cl.resize(cl.size()+1);
-	cl.resize(it1+1);
-	*/
 }
 
 void insert_mdl(cls_s &cl,mdl md){// 将该区域设为不可用区域（假设该模块紧贴边缘）
@@ -380,7 +252,7 @@ int main(){
 
 	int edgcnt,mdlcnt;
 	cin>>edgcnt>>mdlcnt;
-	get_cls(edgcnt,cr);
+	get_cls(edgcnt,clss,cr);
 	for(int i=1; i<=mdlcnt; ++i){
 		//vec v=vec::get(),tgt=vec::get();//返回最优位置的中心？
 		vec tgt=vec::get(),v=vec::get();
