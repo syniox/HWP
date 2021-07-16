@@ -20,6 +20,7 @@ struct edg{ // 边，a为起点，b为终点，合法区域在这个边向量的
 	vec a,b;
 	inline int dr();
 	inline void flip();
+	inline bool ispnt();
 };
 struct mdl{ // module, 记录该模块长方形的四个顶点，保证连续
 	vec v[4];
@@ -81,6 +82,9 @@ int edg::dr(){ // 返回向量方向，右0上1左2下3
 }
 inline void edg::flip(){
 	a.flip(),b.flip();
+}
+inline bool edg::ispnt(){
+	return a==b;
 }
 
 inline vec mdl::cntr(){
@@ -280,25 +284,44 @@ bool on_edge(const edg &e,const mdl &m){
 }
 
 void sanitize_vec(cls_s &cl){
-	cls_s::iterator it1,it2;
-	int cnt=-1;
-	while(cnt){
+	for(int cnt=-1; cnt; ){
 		cnt=0;
-		for(it1=cl.begin(); it1!=cl.end(); ++it1){
-			while(it1->a==it1->b){
+		for(int i=cl.size()-1; i>=0; --i){
+			if(cl[i].ispnt()){
 				++cnt;
-				it1=cl.erase(it1);
+				cl.erase(cl.begin()+i);
 			}
-			for(; ++(it2=it1)!=cl.end(); ){
-				while(it2->a==it2->b) it2=cl.erase(it2);
-				if((it1->dr()^it2->dr())&1) break;
+		}
+		for(int i=0; i<(int)cl.size(); ++i){
+			int a=i,b=(i+1)%cl.size();
+			if(((cl[a].dr()^cl[b].dr())&1)==0){
 				++cnt;
-				assert(it1->b==it2->a);
-				it1->b=it2->b;
-				it2=cl.erase(it2);
+				assert(cl[a].b==cl[b].a);
+				cl[a].b=cl[b].b;
+				cl.erase(cl.begin()+b);
+				break;
 			}
 		}
 	}
+	/*
+	for(; it<(int)cl.size(); ++it){
+		cl[++it1]=cl[it];
+		for(; it1>=0; --it1){
+			if(it1==0){
+				if(cl[it1].ispnt()) continue;
+				break;
+			}
+			if(cl[it1].ispnt()) continue;
+			it2=it1-1;
+			assert(!cl[it2].ispnt());
+			if((cl[it2].dr()^cl[it1].dr())&1) break;
+			assert(cl[it2].b==cl[it1].a);
+			cl[it2].b=cl[it1].b;
+		}
+	}
+	cl.resize(cl.size()+1);
+	cl.resize(it1+1);
+	*/
 }
 
 void insert_mdl(cls_s &cl,mdl md){// 将该区域设为不可用区域（假设该模块紧贴边缘）
