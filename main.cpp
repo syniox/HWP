@@ -302,7 +302,7 @@ bool on_edge(const edg &e,const vec &p){
 		return cabs(p.x-e.a.x)<eps&&p.y>=l-eps&&p.y<=r+eps;
 	}
 	double l=std::min(e.a.x,e.b.x),r=std::max(e.a.x,e.b.x);
-	return cabs(p.y-e.a.y)<eps&&p.x>=l-eps&&p.y<=r+eps;
+	return cabs(p.y-e.a.y)<eps&&p.x>=l-eps&&p.x<=r+eps;
 }
 bool on_edge(const edg &e,const mdl &m){
 	int cnt=0;
