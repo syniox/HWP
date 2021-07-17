@@ -11,6 +11,9 @@ using std::vector;
 using std::map;
 // x,y: 平面直角坐标系
 
+struct col_s{
+	double r,g,b;
+};
 struct vec{ // 向量
 	double x,y;
 	static vec get();
@@ -31,9 +34,11 @@ struct mdl{ // module, 记录该模块长方形的四个顶点，保证连续
 };
 
 using cls_s=vector<edg>;
-
 vector<cls_s> clss; // 闭包集合
-int cairo_x=500,cairo_y=500;
+
+static const col_s col_gry=col_s{0.4,0.4,0.4},col_red=col_s{0.8,0.1,0.3};
+static const col_s col_grn=col_s{0.1,0.7,0.1},col_blu=col_s{0.2,0.4,1.0};
+static const col_s col_cyan=col_s{0.1,0.8,0.8};
 
 vec vec::get(){
 	double x,y;
@@ -116,20 +121,35 @@ void add_edg(vector<edg> &eg,map<vec,std::vector<int>> &vec_idx,vec a,vec b){
 	vec_idx[a].push_back(eg.size()-1);
 }
 
-void draw_line(cairo_t *cr,vec a,vec b){
-	cairo_set_source_rgba(cr,0.8,0.1,0.3,1.0);
+void draw_line(cairo_t *cr,vec x,vec y,col_s c=col_red){
+	cairo_set_source_rgba(cr,c.r,c.g,c.b,1.0);
 	cairo_set_line_width(cr,1);
-	cairo_move_to(cr,a.x*10,a.y*10);
-	cairo_line_to(cr,b.x*10,b.y*10);
+	cairo_move_to(cr,x.x*10,x.y*10);
+	cairo_line_to(cr,y.x*10,y.y*10);
 	cairo_stroke(cr);
 }
-void draw_mdl(cairo_t *cr,mdl m,double r=0.4,double g=0.4,double b=0.4){
-	cairo_set_source_rgba(cr,r,g,b,1.0);
+void draw_mdl(cairo_t *cr,mdl m,col_s c=col_gry){
+	cairo_set_source_rgba(cr,c.r,c.g,c.b,1.0);
 	double x=m.v[0].x,y=m.v[0].y,dx=m.v[2].x-x,dy=m.v[2].y-y;
 	if(dx<0) dx=-dx,x-=dx;
 	if(dy<0) dy=-dy,y-=dy;
-	cairo_rectangle(cr,x*10+0.5,y*10+0.5,dx*10-1,dy*10-1);
+	cairo_rectangle(cr,x*10,y*10,dx*10,dy*10);
 	cairo_fill(cr);
+	draw_line(cr,vec{x,y},vec{x+dx,y},col_grn);
+	draw_line(cr,vec{x,y},vec{x,y+dy},col_grn);
+	draw_line(cr,vec{x+dx,y},vec{x+dx,y+dy},col_grn);
+	draw_line(cr,vec{x,y+dy},vec{x+dx,y+dy},col_grn);
+}
+void dbg_cl(const cls_s &cl){
+	const char* oput_png="dbg.png";
+	cairo_surface_t *surface;
+	surface=cairo_image_surface_create(CAIRO_FORMAT_ARGB32,500,500);
+	cairo_t *cr=cairo_create(surface);
+	for(edg e:cl){
+		draw_line(cr,e.a,e.b);
+	}
+	cairo_surface_write_to_png(surface,oput_png);
+	cairo_surface_destroy(surface);
 }
 
 void get_cls(const int edgcnt,cairo_t *cr){ // 根据题目给出的边构建rectilinear block
@@ -271,15 +291,18 @@ mdl get_great_pos(vec rct,cls_s &cl,vec tgt){// 寻找某个闭包的最优位�
 }
 
 bool on_edge(const edg &e,const vec &p){
-	if(e.a.x==e.b.x) return cabs(p.x-e.a.x)<eps;
-	return cabs(p.y-e.a.y)<eps;
+	if(e.a.x==e.b.x){
+		double l=std::min(e.a.y,e.b.y),r=std::max(e.a.y,e.b.y);
+		return cabs(p.x-e.a.x)<eps&&p.y>=l-eps&&p.y<=r+eps;
+	}
+	double l=std::min(e.a.x,e.b.x),r=std::max(e.a.x,e.b.x);
+	return cabs(p.y-e.a.y)<eps&&p.x>=l-eps&&p.y<=r+eps;
 }
 bool on_edge(const edg &e,const mdl &m){
 	int cnt=0;
 	for(int i=0; i<4; ++i){
 		cnt+=on_edge(e,m.v[i]);
 	}
-	assert(cnt==0||cnt==2);
 	return cnt==2;
 }
 
@@ -385,7 +408,7 @@ int main(){
 		//vec v=vec::get(),tgt=vec::get();//返回最优位置的中心？
 		vec tgt=vec::get(),v=vec::get();
 		tgt=tgt+v*0.5;
-		draw_mdl(cr,mdl::build(tgt,v),0.2,0.6,0.6);
+		draw_mdl(cr,mdl::build(tgt,v),col_cyan);
 		double res=1e12;
 		cls_s *best_cl;
 		mdl mpos;
