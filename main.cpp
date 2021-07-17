@@ -35,6 +35,7 @@ struct mdl{ // module, 记录该模块长方形的四个顶点，保证连续
 
 using cls_s=vector<edg>;
 vector<cls_s> clss; // 闭包集合
+cls_s org_edg;
 
 static const col_s col_gry=col_s{0.4,0.4,0.4},col_red=col_s{0.8,0.1,0.3};
 static const col_s col_grn=col_s{0.1,0.7,0.1},col_blu=col_s{0.2,0.4,1.0};
@@ -160,7 +161,7 @@ void get_cls(const int edgcnt,cairo_t *cr){ // 根据题目给出的边构建rec
 		vec a=vec::get(),b=vec::get();
 		cin>>dir;
 		if(dir) std::swap(a,b);
-		draw_line(cr,a,b);
+		org_edg.push_back(edg{a,b});
 		if(a.x==b.x||a.y==b.y){
 			add_edg(eg,vec_idx,a,b);
 		}else{
@@ -242,6 +243,8 @@ mdl get_great_pos_basic(const vec rct,cls_s &cl,const vec tgt,const bool fliped)
 		if(invalid_seg.empty()){
 			update_gpos(gpos,a,b,rct,tgt,line_y);
 		}else{
+			std::sort(invalid_seg.begin(),invalid_seg.end(),
+					[](const pdd &a,const pdd &b){ return a.first<b.first; });
 			{
 				double end=-1e18,start;
 				for(pdd pr:invalid_seg){
@@ -364,7 +367,7 @@ void insert_mdl(cls_s &cl,mdl md){// 将该区域设为不可用区域（假设�
 			if(cabs(md.v[i].y-e.a.y)>eps){
 				other_y=md.v[i].y;
 			}
-			if(md.v[i].x-e.a.x<md.v[i^2].x-e.a.x){
+			if(cabs(md.v[i].x-e.a.x)<cabs(md.v[i^2].x-e.a.x)){
 				st_x=md.v[i].x;
 				ed_x=md.v[i^2].x;
 			}
@@ -430,7 +433,9 @@ int main(){
 		cout<<i<<": "<<mpos.v[0]<<' '<<mpos.v[2]<<endl;
 		draw_mdl(cr,mpos);
 	}
-
+	for(edg e:org_edg){
+		draw_line(cr,e.a,e.b);
+	}
 	cairo_surface_write_to_png(surface,"test.png");
 	cairo_surface_destroy(surface);
 	return 0;
