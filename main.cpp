@@ -37,6 +37,9 @@ using cls_s=vector<edg>;
 vector<cls_s> clss; // 闭包集合
 cls_s org_edg;
 
+// gry: 矩形对应的位置	red: 合法区域边框
+// grn: 边界 			blu: 无法放入的矩形
+// cyan: 被放入的矩形
 static const col_s col_gry=col_s{0.4,0.4,0.4},col_red=col_s{0.8,0.1,0.3};
 static const col_s col_grn=col_s{0.1,0.7,0.1},col_blu=col_s{0.2,0.4,1.0};
 static const col_s col_cyan=col_s{0.1,0.8,0.8};
@@ -408,10 +411,8 @@ int main(){
 	cin>>edgcnt>>mdlcnt;
 	get_cls(edgcnt,cr);
 	for(int i=1; i<=mdlcnt; ++i){
-		//vec v=vec::get(),tgt=vec::get();//返回最优位置的中心？
-		vec tgt=vec::get(),v=vec::get();
+		vec tgt=vec::get(),v=vec::get(); // 返回最优位置的中心？
 		tgt=tgt+v*0.5;
-		draw_mdl(cr,mdl::build(tgt,v),col_cyan);
 		double res=1e12;
 		cls_s *best_cl;
 		mdl mpos;
@@ -425,13 +426,14 @@ int main(){
 			}
 		}
 		if(res==1e12){
-			cerr<<"no solution"<<endl;
-			cairo_surface_destroy(surface);
-			return 1;
+			draw_mdl(cr,mdl::build(tgt,v),col_blu);
+			cout<<i<<": "<<"cannot be put."<<endl;
+		}else{
+			insert_mdl(*best_cl,mpos);
+			cout<<i<<": "<<mpos.v[0]<<' '<<mpos.v[2]<<endl;
+			draw_mdl(cr,mdl::build(tgt,v),col_cyan);
+			draw_mdl(cr,mpos);
 		}
-		insert_mdl(*best_cl,mpos);
-		cout<<i<<": "<<mpos.v[0]<<' '<<mpos.v[2]<<endl;
-		draw_mdl(cr,mpos);
 	}
 	for(edg e:org_edg){
 		draw_line(cr,e.a,e.b);
