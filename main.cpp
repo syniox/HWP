@@ -132,7 +132,8 @@ void draw_line(cairo_t *cr,vec x,vec y,col_s c=col_red){
 	cairo_line_to(cr,y.x*10,y.y*10);
 	cairo_stroke(cr);
 }
-void draw_mdl(cairo_t *cr,mdl m,col_s c=col_gry){
+void draw_mdl(cairo_t *cr,mdl m,col_s c=col_gry,int id=-1){
+	static char ch[10];
 	cairo_set_source_rgba(cr,c.r,c.g,c.b,1.0);
 	double x=m.v[0].x,y=m.v[0].y,dx=m.v[2].x-x,dy=m.v[2].y-y;
 	if(dx<0) dx=-dx,x-=dx;
@@ -143,6 +144,12 @@ void draw_mdl(cairo_t *cr,mdl m,col_s c=col_gry){
 	draw_line(cr,vec{x,y},vec{x,y+dy},col_grn);
 	draw_line(cr,vec{x+dx,y},vec{x+dx,y+dy},col_grn);
 	draw_line(cr,vec{x,y+dy},vec{x+dx,y+dy},col_grn);
+	if(id==-1) return;
+	sprintf(ch,"%d",id);
+	cairo_set_source_rgba(cr,1,1,1,1);
+	cairo_set_font_size(cr,12);
+	cairo_move_to(cr,(x+dx/2)*10,(y+dy/2)*10);
+	cairo_show_text(cr,ch);
 }
 void dbg_cl(const cls_s &cl){
 	const char* oput_png="dbg.png";
@@ -426,13 +433,13 @@ int main(){
 			}
 		}
 		if(res==1e12){
-			draw_mdl(cr,mdl::build(tgt,v),col_blu);
+			draw_mdl(cr,mdl::build(tgt,v),col_blu,i);
 			cout<<i<<": "<<"cannot be put."<<endl;
 		}else{
 			insert_mdl(*best_cl,mpos);
 			cout<<i<<": "<<mpos.v[0]<<' '<<mpos.v[2]<<endl;
-			draw_mdl(cr,mdl::build(tgt,v),col_cyan);
-			draw_mdl(cr,mpos);
+			draw_mdl(cr,mdl::build(tgt,v),col_cyan,i);
+			draw_mdl(cr,mpos,col_gry,i);
 		}
 	}
 	for(edg e:org_edg){
