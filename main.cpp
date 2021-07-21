@@ -398,6 +398,18 @@ void insert_mdl(cls_s &cl,mdl md){// 将该区域设为不可用区域（假设�
 	assert(0);
 }
 
+double calc_res(vector<mdl> m1,vector<mdl> m2){
+	assert(m1.size()==m2.size());
+	int sz=m1.size();
+	double res=0;
+	for(int i=0; i<sz; ++i){
+		vec v=m1.cntr()-m2.cntr();
+		res+=cabs(v.x)+cabs(v.y);
+	}
+	return res;
+}
+
+
 int main(){
 	// 输入格式1：
 	// 第一行输入空白区域数量n和模块数量m
