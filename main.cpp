@@ -26,7 +26,7 @@ struct edg{ // 边，a为起点，b为终点，合法区域在这个边向量的
 	inline bool ispnt();
 };
 struct mdl{ // module, 记录该模块长方形的四个顶点，保证连续
-	vec v[4];
+	vec v[2];
 	inline vec cntr();//返回中心位置
 	inline void flip();
 	inline void set_inf();
@@ -97,15 +97,15 @@ inline bool edg::ispnt(){
 }
 
 inline vec mdl::cntr(){
-	return (v[0]+v[1]+v[2]+v[3])*0.25;
+	return (v[0]+v[1])*0.5;
 }
 inline void mdl::flip(){
-	for(int i=0; i<4; ++i){
+	for(int i=0; i<2; ++i){
 		std::swap(v[i].x,v[i].y);
 	}
 }
 inline void mdl::set_inf(){
-	for(int i=0; i<4; ++i){
+	for(int i=0; i<2; ++i){
 		v[i].x=v[i].y=-1e12;
 	}
 }
@@ -113,9 +113,7 @@ inline mdl mdl::build(const vec &ctr,const vec &rct){
 	double rad_x=rct.x*0.5,rad_y=rct.y*0.5;
 	mdl m;
 	m.v[0]=(vec){ctr.x-rad_x,ctr.y-rad_y};
-	m.v[1]=(vec){ctr.x-rad_x,ctr.y+rad_y};
-	m.v[2]=(vec){ctr.x+rad_x,ctr.y+rad_y};
-	m.v[3]=(vec){ctr.x+rad_x,ctr.y-rad_y};
+	m.v[1]=(vec){ctr.x+rad_x,ctr.y+rad_y};
 	return m;
 }
 
@@ -135,7 +133,7 @@ void draw_line(cairo_t *cr,vec x,vec y,col_s c=col_red){
 void draw_mdl(cairo_t *cr,mdl m,col_s c=col_gry,int id=-1){
 	static char ch[10];
 	cairo_set_source_rgba(cr,c.r,c.g,c.b,1.0);
-	double x=m.v[0].x,y=m.v[0].y,dx=m.v[2].x-x,dy=m.v[2].y-y;
+	double x=m.v[0].x,y=m.v[0].y,dx=m.v[1].x-x,dy=m.v[1].y-y;
 	if(dx<0) dx=-dx,x-=dx;
 	if(dy<0) dy=-dy,y-=dy;
 	cairo_rectangle(cr,x*10,y*10,dx*10,dy*10);
@@ -313,10 +311,10 @@ bool on_edge(const edg &e,const vec &p){
 }
 bool on_edge(const edg &e,const mdl &m){
 	int cnt=0;
-	for(int i=0; i<4; ++i){
+	for(int i=0; i<2; ++i){
 		cnt+=on_edge(e,m.v[i]);
 	}
-	return cnt==2;
+	return cnt==1;
 }
 
 void sanitize_vec(cls_s &cl){
@@ -373,13 +371,13 @@ void insert_mdl(cls_s &cl,mdl md){// 将该区域设为不可用区域（假设�
 			e.flip();
 		}
 		double st_x,ed_x,other_y;
-		for(int i=0; i<4; ++i){
+		for(int i=0; i<2; ++i){
 			if(cabs(md.v[i].y-e.a.y)>eps){
 				other_y=md.v[i].y;
 			}
-			if(cabs(md.v[i].x-e.a.x)<cabs(md.v[i^2].x-e.a.x)){
+			if(cabs(md.v[i].x-e.a.x)<cabs(md.v[i^1].x-e.a.x)){
 				st_x=md.v[i].x;
-				ed_x=md.v[i^2].x;
+				ed_x=md.v[i^1].x;
 			}
 		}
 		vec p0=(vec){st_x,e.a.y},p1=(vec){st_x,other_y};
@@ -403,7 +401,7 @@ double calc_res(vector<mdl> m1,vector<mdl> m2){
 	int sz=m1.size();
 	double res=0;
 	for(int i=0; i<sz; ++i){
-		vec v=m1.cntr()-m2.cntr();
+		vec v=m1[i].cntr()-m2[i].cntr();
 		res+=cabs(v.x)+cabs(v.y);
 	}
 	return res;
