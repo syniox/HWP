@@ -273,6 +273,7 @@ mdl get_great_pos_basic(const vec rct,cls_s &cl,const vec tgt,const bool fliped)
 				double r=min(b,it2->first);
 				update_gpos(gpos,l,r,rct,tgt,line_y);
 			}
+			update_gpos(gpos,it1->second,b,rct,tgt,line_y);
 		}
 	}
 	return gpos;
