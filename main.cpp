@@ -34,7 +34,6 @@ struct mdl{ // module, 记录该模块长方形的四个顶点，保证连续
 };
 
 using cls_s=vector<edg>;
-vector<cls_s> clss; // 闭包集合
 cls_s org_edg;
 
 // gry: 矩形对应的位置	red: 合法区域边框
@@ -161,7 +160,7 @@ void dbg_cl(const cls_s &cl){
 	cairo_surface_destroy(surface);
 }
 
-void get_cls(const int edgcnt,cairo_t *cr){ // 根据题目给出的边构建rectilinear block
+void get_cls(vector<cls_s> &clss,const int edgcnt,cairo_t *cr){ // 根据题目给出的边构建rectilinear block
 	vector<edg> eg;
 	map<vec,vector<int>> vec_idx;
 	vector<bool> vis;
@@ -338,25 +337,6 @@ void sanitize_vec(cls_s &cl){
 			}
 		}
 	}
-	/*
-	for(; it<(int)cl.size(); ++it){
-		cl[++it1]=cl[it];
-		for(; it1>=0; --it1){
-			if(it1==0){
-				if(cl[it1].ispnt()) continue;
-				break;
-			}
-			if(cl[it1].ispnt()) continue;
-			it2=it1-1;
-			assert(!cl[it2].ispnt());
-			if((cl[it2].dr()^cl[it1].dr())&1) break;
-			assert(cl[it2].b==cl[it1].a);
-			cl[it2].b=cl[it1].b;
-		}
-	}
-	cl.resize(cl.size()+1);
-	cl.resize(it1+1);
-	*/
 }
 
 void insert_mdl(cls_s &cl,mdl md){// 将该区域设为不可用区域（假设该模块紧贴边缘）
@@ -408,7 +388,6 @@ double calc_res(vector<mdl> m1,vector<mdl> m2){
 	return res;
 }
 
-
 int main(){
 	// 输入格式1：
 	// 第一行输入空白区域数量n和模块数量m
@@ -426,8 +405,9 @@ int main(){
 	cairo_t *cr=cairo_create(surface);
 
 	int edgcnt,mdlcnt;
+	vector<cls_s> org_cls;
 	cin>>edgcnt>>mdlcnt;
-	get_cls(edgcnt,cr);
+	get_cls(org_cls,edgcnt,cr);
 	for(int i=1; i<=mdlcnt; ++i){
 		vec tgt=vec::get(),v=vec::get(); // 返回最优位置的中心？
 		tgt=tgt+v*0.5;
