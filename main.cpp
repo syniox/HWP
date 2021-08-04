@@ -43,6 +43,16 @@ static const col_s col_gry=col_s{0.4,0.4,0.4},col_red=col_s{0.8,0.1,0.3};
 static const col_s col_grn=col_s{0.1,0.7,0.1},col_blu=col_s{0.2,0.4,1.0};
 static const col_s col_cyan=col_s{0.1,0.8,0.8};
 
+template <typename T> inline void apn(T &x,const T y){
+	x=x<y?x:y;
+}
+template <typename T> inline void apx(T &x,const T y){
+	x=x>y?x:y;
+}
+template <typename T> const T cabs(const T &x){
+	return x<0?-x:x;
+}
+
 vec vec::get(){
 	double x,y;
 	cin>>x>>y;
@@ -203,10 +213,6 @@ void get_cls(vector<cls_s> &clss,const int edgcnt,cairo_t *cr){ // 根据题目�
 	}
 }
 
-template <typename T>
-const T cabs(const T &x){
-	return x<0?-x:x;
-}
 double get_dis(const vec &a,const vec &b){
 	return cabs(a.x-b.x)+cabs(a.y-b.y);
 }
@@ -316,8 +322,17 @@ bool on_edge(const edg &e,const mdl &m){
 	}
 	return cnt==1;
 }
+bool on_line(const edg &e,const vec &p){
+	if(e.a.x==e.b.x) return cabs(p.x-e.a.x)<eps;
+	return cabs(p.y-e.a.y)<eps;
+}
+bool on_line(const edg &e,const mdl &m){
+	int ans=on_edge(e,m.v[0])+on_edge(e,m.v[1]);
+	return assert(ans!=2),ans;
+}
 
 void sanitize_vec(cls_s &cl){
+	// TODO: optimize
 	for(int cnt=-1; cnt; ){
 		cnt=0;
 		for(int i=cl.size()-1; i>=0; --i){
@@ -339,35 +354,36 @@ void sanitize_vec(cls_s &cl){
 	}
 }
 
-void insert_mdl(cls_s &cl,mdl md){// 将该区域设为不可用区域（假设该模块紧贴边缘）
+void insert_mdl(cls_s &cl,mdl md){ // 将该区域设为不可用区域（假设该模块紧贴边缘）
 	using cls_i=cls_s::iterator;
 	for(cls_i it=cl.begin(); it!=cl.end(); ++it){
 		edg e=*it;
-		if(!on_edge(e,md)) continue;
+		if(!on_line(e,md)) continue;
 		bool fliped=0;
 		if(e.dr()&1){
 			fliped=1;
 			flip_vec(cl);
-			md.flip();
 			e.flip();
+			md.flip();
 		}
-		double st_x,ed_x,other_y;
+		double bk_x=1e9,st_x,ed_x,other_y; // 断点，另一个y
 		for(int i=0; i<2; ++i){
 			if(cabs(md.v[i].y-e.a.y)>eps){
 				other_y=md.v[i].y;
 			}
-			if(cabs(md.v[i].x-e.a.x)<cabs(md.v[i^1].x-e.a.x)){
+			if((md.v[i].x>md.v[i^1].x)==(e.a.x>e.b.x)){
 				st_x=md.v[i].x;
 				ed_x=md.v[i^1].x;
 			}
+			apn(bk_x,md.v[i].x);
 		}
-		vec p0=(vec){st_x,e.a.y},p1=(vec){st_x,other_y};
-		vec p2=(vec){ed_x,other_y},p3=(vec){ed_x,e.a.y};
-		it->b=p0;
-		it=cl.insert(++it,(edg){p0,p1});
-		it=cl.insert(++it,(edg){p1,p2});
-		it=cl.insert(++it,(edg){p2,p3});
-		it=cl.insert(++it,(edg){p3,e.b});
+		apx(bk_x,min(e.a.x,e.b.x));
+		vec pb=vec{bk_x,e.a.y},p1=vec{st_x,e.a.y};
+		vec p2=vec{st_x,other_y},p3=vec{ed_x,other_y},p4=vec{ed_x,e.a.y};
+		it->b=pb;
+		it=cl.insert(++it,(edg){pb,p1}),it=cl.insert(++it,(edg){p1,p2});
+		it=cl.insert(++it,(edg){p2,p3}),it=cl.insert(++it,(edg){p3,p4});
+		it=cl.insert(++it,(edg){p4,pb}),it=cl.insert(++it,(edg){pb,e.b});
 		if(fliped){
 			flip_vec(cl);
 		}
@@ -405,8 +421,8 @@ int main(){
 	cairo_t *cr=cairo_create(surface);
 
 	int edgcnt,mdlcnt;
-	vector<cls_s> org_cls;
 	cin>>edgcnt>>mdlcnt;
+	vector<cls_s> org_cls;
 	get_cls(org_cls,edgcnt,cr);
 	for(int i=1; i<=mdlcnt; ++i){
 		vec tgt=vec::get(),v=vec::get(); // 返回最优位置的中心？
@@ -414,7 +430,7 @@ int main(){
 		double res=1e12;
 		cls_s *best_cl;
 		mdl mpos;
-		for(cls_s &cl:clss){
+		for(cls_s &cl:org_cls){
 			mdl cur=get_great_pos(v,cl,tgt);
 			double tmp_res=get_dis(cur.cntr(),tgt);
 			if(tmp_res<res){
