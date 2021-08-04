@@ -216,9 +216,31 @@ void get_cls(vector<cls_s> &clss,const int edgcnt,cairo_t *cr){ // 根据题目�
 double get_dis(const vec &a,const vec &b){
 	return cabs(a.x-b.x)+cabs(a.y-b.y);
 }
-template <typename T>
-void flip_vec(vector <T> &vt){
+template <typename T> void flip_vec(vector <T> &vt){
 	for(T &x:vt) x.flip();
+}
+bool on_edge(const edg &e,const vec &p){
+	if(e.a.x==e.b.x){
+		double l=std::min(e.a.y,e.b.y),r=std::max(e.a.y,e.b.y);
+		return cabs(p.x-e.a.x)<eps&&p.y>=l-eps&&p.y<=r+eps;
+	}
+	double l=std::min(e.a.x,e.b.x),r=std::max(e.a.x,e.b.x);
+	return cabs(p.y-e.a.y)<eps&&p.x>=l-eps&&p.x<=r+eps;
+}
+bool on_edge(const edg &e,const mdl &m){
+	int cnt=0;
+	for(int i=0; i<2; ++i){
+		cnt+=on_edge(e,m.v[i]);
+	}
+	return cnt==1;
+}
+bool on_line(const edg &e,const vec &p){
+	if(e.a.x==e.b.x) return cabs(p.x-e.a.x)<eps;
+	return cabs(p.y-e.a.y)<eps;
+}
+bool on_line(const edg &e,const mdl &m){
+	int ans=on_line(e,m.v[0])+on_line(e,m.v[1]);
+	return assert(ans!=2),ans;
 }
 
 void update_gpos(mdl &gpos,double l,double r,const vec rct,const vec tgt,const double line_y){
@@ -233,7 +255,7 @@ void update_gpos(mdl &gpos,double l,double r,const vec rct,const vec tgt,const d
 	}
 }
 
-mdl get_great_pos_basic(const vec rct,cls_s &cl,const vec tgt,const bool fliped){//横向，坐标系是否经过变换
+mdl get_great_pos_basic(const vector<cls_s> &clss,const vec rct,cls_s &cl,const vec tgt,const bool fliped){//横向，坐标系是否经过变换
 	using pdd=std::pair<double,double>;
 	vector<pdd> invalid_seg,neo_seg;
 	mdl gpos; // great pos
@@ -242,17 +264,32 @@ mdl get_great_pos_basic(const vec rct,cls_s &cl,const vec tgt,const bool fliped)
 		if(cur_e.dr()&1) continue; // 保证横向
 		invalid_seg.clear();
 		neo_seg.clear();
-		for(edg e:cl){
-			if((e.dr()&1)||cur_e.dr()==e.dr()) continue;
-			if(cabs(cur_e.a.y-e.a.y)<rct.y){ // 忽略刚好重合的情况
-				int a=e.a.x,b=e.b.x;
-				if(a>b) std::swap(a,b);
-				invalid_seg.push_back(std::make_pair(a,b));
+		for(cls_s ccl:clss){
+			for(edg e:ccl){
+				if((e.dr()&1)||cur_e.dr()==e.dr()) continue;
+				if(cabs(cur_e.a.y-e.a.y)<rct.y){ // 忽略刚好重合的情况
+					int a=e.a.x,b=e.b.x;
+					if(a>b) std::swap(a,b);
+					invalid_seg.push_back(std::make_pair(a,b));
+				}
 			}
 		}
-		double a=min(cur_e.a.x,cur_e.b.x);
-		double b=max(cur_e.a.x,cur_e.b.x);
-		double line_y=cur_e.a.y+rct.y*(0.5-((cur_e.dr()==2)^fliped));
+		bool rvld=(cur_e.dr()==2)^fliped; // 另一个y是否在e的y的下面
+		double pa=min(cur_e.a.x,cur_e.b.x),a=pa-rct.x;
+		double pb=max(cur_e.a.x,cur_e.b.x),b=pb+rct.x;
+		double line_y=cur_e.a.y+rct.y*(0.5-rvld);
+		double other_y=cur_e.a.y+(rvld?-rct.y:rct.y);
+		for(cls_s ccl:clss){
+			for(edg e:ccl){
+				if((e.dr()&1)==0) continue;
+				double cx=e.a.x;
+				vec p1=(vec){cx,cur_e.a.y},p2=(vec){cx,other_y};
+				if(on_edge((edg){p1,p2},e.a)||on_edge((edg){p1,p2},e.b)){
+					if(cx<pa+eps) apx(a,cx);
+					if(cx>pb-eps) apn(b,cx);
+				}
+			}
+		}
 		if(invalid_seg.empty()){
 			update_gpos(gpos,a,b,rct,tgt,line_y);
 		}else{
@@ -284,18 +321,17 @@ mdl get_great_pos_basic(const vec rct,cls_s &cl,const vec tgt,const bool fliped)
 	return gpos;
 }
 
-//TODO: “凹”型图内部决策
-mdl get_great_pos(vec rct,cls_s &cl,vec tgt){// 寻找某个闭包的最优位置
+mdl get_great_pos(vector<cls_s> &clss,vec rct,cls_s &cl,vec tgt){// 寻找某个闭包的最优位置
 	// cl表示搜寻的闭包
 	// 函数返回模块最后占用的位置
 	mdl mpos[4];
-	mpos[0]=get_great_pos_basic(rct,cl,tgt,0); // 横着的原矩阵 横向rb
+	mpos[0]=get_great_pos_basic(clss,rct,cl,tgt,0); // 横着的原矩阵 横向rb
 	rct.flip();
-	mpos[1]=get_great_pos_basic(rct,cl,tgt,0); // 竖着的原矩阵 横向rb
+	mpos[1]=get_great_pos_basic(clss,rct,cl,tgt,0); // 竖着的原矩阵 横向rb
 	flip_vec(cl);
-	mpos[2]=get_great_pos_basic(rct,cl,tgt,1); // 横着的原矩阵 竖向rb（坐标系颠倒）
+	mpos[2]=get_great_pos_basic(clss,rct,cl,tgt,1); // 横着的原矩阵 竖向rb（坐标系颠倒）
 	rct.flip();
-	mpos[3]=get_great_pos_basic(rct,cl,tgt,1); // 竖着的原矩阵 竖向rb（坐标系颠倒）
+	mpos[3]=get_great_pos_basic(clss,rct,cl,tgt,1); // 竖着的原矩阵 竖向rb（坐标系颠倒）
 	flip_vec(cl);
 	mpos[2].flip(),mpos[3].flip();
 	mdl pos=mpos[0];
@@ -305,30 +341,6 @@ mdl get_great_pos(vec rct,cls_s &cl,vec tgt){// 寻找某个闭包的最优位�
 		if(tmp<res) res=tmp,pos=mpos[i];
 	}
 	return pos;
-}
-
-bool on_edge(const edg &e,const vec &p){
-	if(e.a.x==e.b.x){
-		double l=std::min(e.a.y,e.b.y),r=std::max(e.a.y,e.b.y);
-		return cabs(p.x-e.a.x)<eps&&p.y>=l-eps&&p.y<=r+eps;
-	}
-	double l=std::min(e.a.x,e.b.x),r=std::max(e.a.x,e.b.x);
-	return cabs(p.y-e.a.y)<eps&&p.x>=l-eps&&p.x<=r+eps;
-}
-bool on_edge(const edg &e,const mdl &m){
-	int cnt=0;
-	for(int i=0; i<2; ++i){
-		cnt+=on_edge(e,m.v[i]);
-	}
-	return cnt==1;
-}
-bool on_line(const edg &e,const vec &p){
-	if(e.a.x==e.b.x) return cabs(p.x-e.a.x)<eps;
-	return cabs(p.y-e.a.y)<eps;
-}
-bool on_line(const edg &e,const mdl &m){
-	int ans=on_edge(e,m.v[0])+on_edge(e,m.v[1]);
-	return assert(ans!=2),ans;
 }
 
 void sanitize_vec(cls_s &cl){
@@ -431,7 +443,7 @@ int main(){
 		cls_s *best_cl;
 		mdl mpos;
 		for(cls_s &cl:org_cls){
-			mdl cur=get_great_pos(v,cl,tgt);
+			mdl cur=get_great_pos(org_cls,v,cl,tgt);
 			double tmp_res=get_dis(cur.cntr(),tgt);
 			if(tmp_res<res){
 				res=tmp_res;
