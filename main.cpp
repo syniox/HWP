@@ -255,33 +255,19 @@ void update_gpos(mdl &gpos,double l,double r,const vec rct,const vec tgt,const d
 	}
 }
 
-mdl get_great_pos_basic(const vector<cls_s> &clss,const vec rct,cls_s &cl,const vec tgt,const bool fliped){//横向，坐标系是否经过变换
-	using pdd=std::pair<double,double>;
-	vector<pdd> invalid_seg,neo_seg;
-	mdl gpos; // great pos
+mdl get_great_pos_cl(const cls_s &cl,const vector<edg> ebuk[4],const vec rct,const vec tgt,const bool fliped){
+	// O(e(cl)*e) 一个闭合回路的最优解
+	mdl gpos;
 	gpos.set_inf();
 	for(edg cur_e:cl){
-		if(cur_e.dr()&1) continue; // 保证横向
-		invalid_seg.clear();
-		neo_seg.clear();
-		for(cls_s ccl:clss){
-			for(edg e:ccl){
-				if((e.dr()&1)||cur_e.dr()==e.dr()) continue;
-				if(cabs(cur_e.a.y-e.a.y)<rct.y){ // 忽略刚好重合的情况
-					int a=e.a.x,b=e.b.x;
-					if(a>b) std::swap(a,b);
-					invalid_seg.push_back(std::make_pair(a,b));
-				}
-			}
-		}
-		bool rvld=(cur_e.dr()==2)^fliped; // 另一个y是否在e的y的下面
+		if(cur_e.dr()&1) continue;
+		bool rvld=(cur_e.dr()==2)^fliped;
 		double pa=min(cur_e.a.x,cur_e.b.x),a=pa-rct.x;
 		double pb=max(cur_e.a.x,cur_e.b.x),b=pb+rct.x;
 		double line_y=cur_e.a.y+rct.y*(0.5-rvld);
 		double other_y=cur_e.a.y+(rvld?-rct.y:rct.y);
-		for(cls_s ccl:clss){
-			for(edg e:ccl){
-				if((e.dr()&1)==0) continue;
+		for(int i=0; i<2; ++i){
+			for(edg e:ebuk[i<<1|1]){
 				double cx=e.a.x;
 				vec p1=(vec){cx,cur_e.a.y},p2=(vec){cx,other_y};
 				if(on_edge((edg){p1,p2},e.a)||on_edge((edg){p1,p2},e.b)){
@@ -290,55 +276,63 @@ mdl get_great_pos_basic(const vector<cls_s> &clss,const vec rct,cls_s &cl,const 
 				}
 			}
 		}
-		if(invalid_seg.empty()){
-			update_gpos(gpos,a,b,rct,tgt,line_y);
-		}else{
-			std::sort(invalid_seg.begin(),invalid_seg.end(),
-					[](const pdd &a,const pdd &b){ return a.first<b.first; });
-			{
-				double end=-1e18,start;
-				for(pdd pr:invalid_seg){
-					if(end<pr.first){
-						if(end>-1e18) neo_seg.push_back(std::make_pair(start,end));
-						start=pr.first,end=pr.second;
-					}else{
-						end=std::max(end,pr.second);
-					}
-				}
-				neo_seg.push_back(std::make_pair(start,end));
+		double ed=pa;
+		for(edg e:ebuk[cur_e.dr()^2]){
+			if(cabs(e.a.y-line_y)*2>rct.y) continue;
+			if(!cur_e.dr()) std::swap(e.a,e.b);
+			if(e.a.x<ed+eps){
+				apx(ed,e.b.x);
+				continue;
 			}
-			vector<pdd>::iterator it1=neo_seg.begin(),it2=it1;
-			++it2;
-			update_gpos(gpos,a,min(b,it1->first),rct,tgt,line_y);
-			for(; it2!=neo_seg.end(); ++it1,++it2){
-				double l=max(a,it1->second);
-				double r=min(b,it2->first);
-				update_gpos(gpos,l,r,rct,tgt,line_y);
-			}
-			update_gpos(gpos,it1->second,b,rct,tgt,line_y);
+			update_gpos(gpos,ed,e.a.x,rct,tgt,line_y);
+		}
+		update_gpos(gpos,ed,pb,rct,tgt,line_y);
+	}
+	return gpos;
+}
+
+mdl get_great_pos_basic(const vector<cls_s> &clss,const cls_s *best_cl,const vec rct,const vec tgt,const bool fliped){
+	// O(e^2) 一个坐标系的最优解（横向，坐标系是否经过变换）
+	vector<edg> ebuk[4];
+	for(cls_s cl:clss){
+		for(edg e:cl) ebuk[e.dr()].push_back(e);
+	}
+	for(int i=0; i<4; ++i){
+		std::sort(ebuk[i].begin(),ebuk[i].end(),
+				[](const edg &a,const edg &b){ return min(a.a.x,a.b.x)<min(b.a.x,b.b.x); });
+	}
+	mdl gpos; // great pos
+	gpos.set_inf();
+	for(const cls_s &cl:clss){
+		mdl pos=get_great_pos_cl(cl,ebuk,rct,tgt,fliped);
+		if(get_dis(pos.cntr(),tgt)<get_dis(gpos.cntr(),tgt)){
+			gpos=pos,best_cl=&cl;
 		}
 	}
 	return gpos;
 }
 
-mdl get_great_pos(vector<cls_s> &clss,vec rct,cls_s &cl,vec tgt){// 寻找某个闭包的最优位置
+mdl get_great_pos(vector<cls_s> &clss,cls_s *best_cl,vec rct,vec tgt){// 寻找某个闭包的最优位置
 	// cl表示搜寻的闭包
 	// 函数返回模块最后占用的位置
 	mdl mpos[4];
-	mpos[0]=get_great_pos_basic(clss,rct,cl,tgt,0); // 横着的原矩阵 横向rb
+	cls_s* bcl[4]={0};
+	mpos[0]=get_great_pos_basic(clss,bcl[0],rct,tgt,0); // 横着的原矩阵 横向rb
 	rct.flip();
-	mpos[1]=get_great_pos_basic(clss,rct,cl,tgt,0); // 竖着的原矩阵 横向rb
-	flip_vec(cl);
-	mpos[2]=get_great_pos_basic(clss,rct,cl,tgt,1); // 横着的原矩阵 竖向rb（坐标系颠倒）
+	mpos[1]=get_great_pos_basic(clss,bcl[1],rct,tgt,0); // 竖着的原矩阵 横向rb
+	for(cls_s cl:clss) flip_vec(cl);
+	mpos[2]=get_great_pos_basic(clss,bcl[2],rct,tgt,1); // 横着的原矩阵 竖向rb（坐标系颠倒）
 	rct.flip();
-	mpos[3]=get_great_pos_basic(clss,rct,cl,tgt,1); // 竖着的原矩阵 竖向rb（坐标系颠倒）
-	flip_vec(cl);
+	mpos[3]=get_great_pos_basic(clss,bcl[3],rct,tgt,1); // 竖着的原矩阵 竖向rb（坐标系颠倒）
+	for(cls_s cl:clss) flip_vec(cl);
 	mpos[2].flip(),mpos[3].flip();
+
 	mdl pos=mpos[0];
+	best_cl=bcl[0];
 	double res=get_dis(mpos[0].cntr(),tgt);
 	for(int i=1; i<4; ++i){
 		double tmp=get_dis(mpos[i].cntr(),tgt);
-		if(tmp<res) res=tmp,pos=mpos[i];
+		if(tmp<res) res=tmp,pos=mpos[i],best_cl=bcl[i];
 	}
 	return pos;
 }
@@ -440,17 +434,8 @@ int main(){
 		vec tgt=vec::get(),v=vec::get(); // 返回最优位置的中心？
 		tgt=tgt+v*0.5;
 		double res=1e12;
-		cls_s *best_cl;
-		mdl mpos;
-		for(cls_s &cl:org_cls){
-			mdl cur=get_great_pos(org_cls,v,cl,tgt);
-			double tmp_res=get_dis(cur.cntr(),tgt);
-			if(tmp_res<res){
-				res=tmp_res;
-				best_cl=&cl;
-				mpos=cur;
-			}
-		}
+		cls_s *best_cl=0;
+		mdl mpos=get_great_pos(org_cls,best_cl,v,tgt);
 		if(res==1e12){
 			draw_mdl(cr,mdl::build(tgt,v),col_blu,i);
 			cout<<i<<": "<<"cannot be put."<<endl;
