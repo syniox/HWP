@@ -3,6 +3,7 @@
 #include <cassert>
 #include <algorithm>
 #include <cairo/cairo.h>
+#include "types.h"
 #include <map>
 static const double eps=1e-6;
 using std::cin; using std::cout; using std::cerr; using std::endl;
@@ -10,28 +11,6 @@ using std::min; using std::max;
 using std::vector;
 using std::map;
 // x,y: 平面直角坐标系
-
-struct col_s{
-	double r,g,b;
-};
-struct vec{ // 向量
-	double x,y;
-	static vec get();
-	inline void flip();
-};
-struct edg{ // 边，a为起点，b为终点，合法区域在这个边向量的左边
-	vec a,b;
-	inline int dr();
-	inline void flip();
-	inline bool ispnt();
-};
-struct mdl{ // module, 记录该模块长方形的四个顶点，保证连续
-	vec v[2];
-	inline vec cntr();//返回中心位置
-	inline void flip();
-	inline void set_inf();
-	static mdl build(const vec &ctr,const vec &rct);
-};
 
 using cls_s=vector<edg>;
 cls_s org_edg;
@@ -52,80 +31,6 @@ template <typename T> inline void apx(T &x,const T y){
 template <typename T> const T cabs(const T &x){
 	return x<0?-x:x;
 }
-
-vec vec::get(){
-	double x,y;
-	cin>>x>>y;
-	return (vec){x,y};
-}
-inline void vec::flip(){
-	std::swap(x,y);
-}
-template <typename T>
-vec operator * (const vec &v,const T x){
-	return (vec){v.x*x,v.y*x};
-}
-double operator *(const vec &a,const vec &b){
-	return a.x*b.y-a.y*b.x;
-}
-vec operator + (const vec &a,const vec &b){
-	return (vec){a.x+b.x,a.y+b.y};
-}
-vec operator - (const vec &a,const vec &b){
-	return (vec){a.x-b.x,a.y-b.y};
-}
-bool operator < (const vec &a,const vec &b){
-	return a.x==b.x?a.y<b.y:a.x<b.x;
-}
-bool operator == (const vec &a,const vec &b){
-	return a.x==b.x&&a.y==b.y;
-}
-std::ostream& operator << (std::ostream &out,const vec &v){
-	out<<'('<<v.x<<' '<<v.y<<')';
-	return out;
-}
-std::ostream& operator << (std::ostream &out,const edg &e){
-	out<<e.a<<"->"<<e.b;
-	return out;
-}
-
-bool crossed(const edg &a,const edg &b){ // 线段是否相交，重合情况不考虑
-	return ((b.a-a.a)*(a.b-a.a))*((b.b-a.a)*(a.b-a.a))<-eps;
-}
-int edg::dr(){ // 返回向量方向，右0上1左2下3
-	assert(a.x==b.x||a.y==b.y);
-	assert(!(a==b));
-	if(a.y==b.y) return (a.x>b.x)<<1;
-	else return (a.x>b.x)<<1|1;
-}
-inline void edg::flip(){
-	a.flip(),b.flip();
-}
-inline bool edg::ispnt(){
-	return a==b;
-}
-
-inline vec mdl::cntr(){
-	return (v[0]+v[1])*0.5;
-}
-inline void mdl::flip(){
-	for(int i=0; i<2; ++i){
-		std::swap(v[i].x,v[i].y);
-	}
-}
-inline void mdl::set_inf(){
-	for(int i=0; i<2; ++i){
-		v[i].x=v[i].y=-1e12;
-	}
-}
-inline mdl mdl::build(const vec &ctr,const vec &rct){
-	double rad_x=rct.x*0.5,rad_y=rct.y*0.5;
-	mdl m;
-	m.v[0]=(vec){ctr.x-rad_x,ctr.y-rad_y};
-	m.v[1]=(vec){ctr.x+rad_x,ctr.y+rad_y};
-	return m;
-}
-
 
 void add_edg(vector<edg> &eg,map<vec,std::vector<int>> &vec_idx,vec a,vec b){
 	eg.push_back((edg){a,b});
