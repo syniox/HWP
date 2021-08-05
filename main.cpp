@@ -124,28 +124,24 @@ double get_dis(const vec &a,const vec &b){
 template <typename T> void flip_vec(vector <T> &vt){
 	for(T &x:vt) x.flip();
 }
-bool on_edge(const edg &e,const vec &p){
+bool on_edge(const edg &e,const vec &p,bool inc=1){ // inclusive: 在边界上算不算
+	int wgt=inc?1:-1;
 	if(e.a.x==e.b.x){
 		double l=std::min(e.a.y,e.b.y),r=std::max(e.a.y,e.b.y);
-		return cabs(p.x-e.a.x)<eps&&p.y>=l-eps&&p.y<=r+eps;
+		return cabs(p.x-e.a.x)<eps&&p.y>=l-wgt*eps&&p.y<=r+wgt*eps;
 	}
 	double l=std::min(e.a.x,e.b.x),r=std::max(e.a.x,e.b.x);
-	return cabs(p.y-e.a.y)<eps&&p.x>=l-eps&&p.x<=r+eps;
+	return cabs(p.y-e.a.y)<eps&&p.x>=l-wgt*eps&&p.x<=r+wgt*eps;
 }
 bool on_edge(const edg &e,const mdl &m){
 	int cnt=0;
 	for(int i=0; i<2; ++i){
-		cnt+=on_edge(e,m.v[i]);
+		cnt+=on_edge(e,m.v[i],0);
 	}
-	return cnt==1;
-}
-bool on_line(const edg &e,const vec &p){
-	if(e.a.x==e.b.x) return cabs(p.x-e.a.x)<eps;
-	return cabs(p.y-e.a.y)<eps;
-}
-bool on_line(const edg &e,const mdl &m){
-	int ans=on_line(e,m.v[0])+on_line(e,m.v[1]);
-	return assert(ans!=2),ans;
+	for(int i=0; i<2; ++i){
+		cnt+=on_edge(e,(vec){m.v[i].x,m.v[i^1].y},0);
+	}
+	return cnt;
 }
 
 void update_gpos(mdl &gpos,double l,double r,const vec rct,const vec tgt,const double line_y){
@@ -196,7 +192,7 @@ mdl get_great_pos_cl(const cls_s &cl,const vector<edg> ebuk[4],const vec rct,con
 	return gpos;
 }
 
-mdl get_great_pos_basic(const vector<cls_s> &clss,const cls_s *best_cl,const vec rct,const vec tgt,const bool fliped){
+mdl get_great_pos_basic(const vector<cls_s> &clss,int &best_cl,const vec rct,const vec tgt,const bool fliped){
 	// O(e^2) 一个坐标系的最优解（横向，坐标系是否经过变换）
 	vector<edg> ebuk[4];
 	for(cls_s cl:clss){
@@ -208,20 +204,20 @@ mdl get_great_pos_basic(const vector<cls_s> &clss,const cls_s *best_cl,const vec
 	}
 	mdl gpos; // great pos
 	gpos.set_inf();
-	for(const cls_s &cl:clss){
-		mdl pos=get_great_pos_cl(cl,ebuk,rct,tgt,fliped);
+	for(int i=0; i<(int)clss.size(); ++i){
+		mdl pos=get_great_pos_cl(clss[i],ebuk,rct,tgt,fliped);
 		if(get_dis(pos.cntr(),tgt)<get_dis(gpos.cntr(),tgt)){
-			gpos=pos,best_cl=&cl;
+			gpos=pos,best_cl=i;
 		}
 	}
 	return gpos;
 }
 
-mdl get_great_pos(vector<cls_s> &clss,cls_s *best_cl,vec rct,vec tgt){// 寻找某个闭包的最优位置
+mdl get_great_pos(vector<cls_s> &clss,int &best_cl,vec rct,vec tgt){// 寻找某个闭包的最优位置
 	// cl表示搜寻的闭包
 	// 函数返回模块最后占用的位置
 	mdl mpos[4];
-	cls_s* bcl[4]={0};
+	int bcl[4]={0};
 	mpos[0]=get_great_pos_basic(clss,bcl[0],rct,tgt,0); // 横着的原矩阵 横向rb
 	rct.flip();
 	mpos[1]=get_great_pos_basic(clss,bcl[1],rct,tgt,0); // 竖着的原矩阵 横向rb
@@ -269,7 +265,7 @@ void insert_mdl(cls_s &cl,mdl md){ // 将该区域设为不可用区域（假设
 	using cls_i=cls_s::iterator;
 	for(cls_i it=cl.begin(); it!=cl.end(); ++it){
 		edg e=*it;
-		if(!on_line(e,md)) continue;
+		if(!on_edge(e,md)) continue;
 		bool fliped=0;
 		if(e.dr()&1){
 			fliped=1;
@@ -338,15 +334,14 @@ int main(){
 	for(int i=1; i<=mdlcnt; ++i){
 		vec tgt=vec::get(),v=vec::get(); // 返回最优位置的中心？
 		tgt=tgt+v*0.5;
-		double res=1e12;
-		cls_s *best_cl=0;
+		int best_cl=0;
 		mdl mpos=get_great_pos(org_cls,best_cl,v,tgt);
-		if(res==1e12){
+		if(get_dis(mpos.cntr(),tgt)>1e12){
 			draw_mdl(cr,mdl::build(tgt,v),col_blu,i);
 			cout<<i<<": "<<"cannot be put."<<endl;
 		}else{
-			insert_mdl(*best_cl,mpos);
-			cout<<i<<": "<<mpos.v[0]<<' '<<mpos.v[2]<<endl;
+			insert_mdl(org_cls[best_cl],mpos);
+			cout<<i<<": "<<mpos.v[0]<<' '<<mpos.v[1]<<endl;
 			draw_mdl(cr,mdl::build(tgt,v),col_cyan,i);
 			draw_mdl(cr,mpos,col_gry,i);
 		}

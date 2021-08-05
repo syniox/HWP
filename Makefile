@@ -22,4 +22,4 @@ data: data.cpp
 
 .PHONY: clean
 clean:
-	rm -f main data test.png
+	rm -f *.o main data test.png
