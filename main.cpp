@@ -181,11 +181,10 @@ mdl get_great_pos_cl(const cls_s &cl,const vector<edg> ebuk[4],const vec rct,con
 		for(edg e:ebuk[cur_e.dr()^2]){
 			if(cabs(e.a.y-line_y)*2>rct.y-eps) continue;
 			if(!cur_e.dr()) std::swap(e.a,e.b);
-			if(e.a.x<ed+eps){
-				apx(ed,e.b.x);
-				continue;
+			if(e.a.x>ed){
+				update_gpos(gpos,ed,e.a.x,rct,tgt,line_y);
 			}
-			update_gpos(gpos,ed,e.a.x,rct,tgt,line_y);
+			apx(ed,e.b.x);
 		}
 		update_gpos(gpos,ed,b,rct,tgt,line_y);
 	}
@@ -216,16 +215,18 @@ mdl get_great_pos_basic(const vector<cls_s> &clss,int &best_cl,const vec rct,con
 mdl get_great_pos(vector<cls_s> &clss,int &best_cl,vec rct,vec tgt){// 寻找某个闭包的最优位置
 	// cl表示搜寻的闭包
 	// 函数返回模块最后占用的位置
+	// TODO: 把排序函数从basic中提出来
+	// TODO: flip_vec &cl safe?
 	mdl mpos[4];
 	int bcl[4]={0};
 	mpos[0]=get_great_pos_basic(clss,bcl[0],rct,tgt,0); // 横着的原矩阵 横向rb
 	rct.flip();
 	mpos[1]=get_great_pos_basic(clss,bcl[1],rct,tgt,0); // 竖着的原矩阵 横向rb
-	for(cls_s cl:clss) flip_vec(cl);
+	for(cls_s &cl:clss) flip_vec(cl);
 	mpos[2]=get_great_pos_basic(clss,bcl[2],rct,tgt,1); // 横着的原矩阵 竖向rb（坐标系颠倒）
 	rct.flip();
 	mpos[3]=get_great_pos_basic(clss,bcl[3],rct,tgt,1); // 竖着的原矩阵 竖向rb（坐标系颠倒）
-	for(cls_s cl:clss) flip_vec(cl);
+	for(cls_s &cl:clss) flip_vec(cl);
 	mpos[2].flip(),mpos[3].flip();
 
 	mdl pos=mpos[0];
