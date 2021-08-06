@@ -44,7 +44,7 @@ int edg::dr(){ // 返回向量方向，右0上1左2下3
 	assert(a.x==b.x||a.y==b.y);
 	assert(!(a==b));
 	if(a.y==b.y) return (a.x>b.x)<<1;
-	else return (a.x>b.x)<<1|1;
+	else return (a.y>b.y)<<1|1;
 }
 void edg::flip(){
 	a.flip(),b.flip();

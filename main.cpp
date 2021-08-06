@@ -177,9 +177,9 @@ mdl get_great_pos_cl(const cls_s &cl,const vector<edg> ebuk[4],const vec rct,con
 				}
 			}
 		}
-		double ed=pa;
+		double ed=a;
 		for(edg e:ebuk[cur_e.dr()^2]){
-			if(cabs(e.a.y-line_y)*2>rct.y) continue;
+			if(cabs(e.a.y-line_y)*2>rct.y-eps) continue;
 			if(!cur_e.dr()) std::swap(e.a,e.b);
 			if(e.a.x<ed+eps){
 				apx(ed,e.b.x);
@@ -187,7 +187,7 @@ mdl get_great_pos_cl(const cls_s &cl,const vector<edg> ebuk[4],const vec rct,con
 			}
 			update_gpos(gpos,ed,e.a.x,rct,tgt,line_y);
 		}
-		update_gpos(gpos,ed,pb,rct,tgt,line_y);
+		update_gpos(gpos,ed,b,rct,tgt,line_y);
 	}
 	return gpos;
 }
