@@ -1,4 +1,4 @@
-FLAGS=-std=c++11 -g -Wall -fsanitize=undefined
+FLAGS=-std=c++11 -g -Wall -Wextra -fsanitize=undefined
 
 all: main data
 

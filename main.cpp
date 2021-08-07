@@ -76,6 +76,7 @@ void dbg_cl(const cls_s &cl){
 	cairo_surface_t *surface;
 	surface=cairo_image_surface_create(CAIRO_FORMAT_ARGB32,500,500);
 	cairo_t *cr=cairo_create(surface);
+	draw_grid(cr,500);
 	for(edg e:cl){
 		draw_line(cr,e.a,e.b);
 	}
@@ -83,7 +84,7 @@ void dbg_cl(const cls_s &cl){
 	cairo_surface_destroy(surface);
 }
 
-void get_cls(vector<cls_s> &clss,const int edgcnt,cairo_t *cr){ // 根据题目给出的边构建rectilinear block
+void get_cls(vector<cls_s> &clss,const int edgcnt){ // 根据题目给出的边构建rectilinear block
 	vector<edg> eg;
 	map<vec,vector<int>> vec_idx;
 	vector<bool> vis;
@@ -132,6 +133,15 @@ double get_dis(const vec &a,const vec &b){
 template <typename T> void flip_vec(vector <T> &vt){
 	for(T &x:vt) x.flip();
 }
+bool have_crs(double l1,double r1,double l2,double r2){
+	if(l1>r1) std::swap(l1,r1);
+	if(l2>r2) std::swap(l2,r2);
+	return max(l1,l2)<=min(r1,r2);
+}
+bool on_line(const edg &e,const vec &p){
+	if(e.a.x==e.b.x) return cabs(p.x-e.a.x)<eps;
+	return cabs(p.y-e.a.y)<eps;
+}
 bool on_edge(const edg &e,const vec &p,bool inc=1){ // inclusive: 在边界上算不算
 	int wgt=inc?1:-1;
 	if(e.a.x==e.b.x){
@@ -142,14 +152,11 @@ bool on_edge(const edg &e,const vec &p,bool inc=1){ // inclusive: 在边界上�
 	return cabs(p.y-e.a.y)<eps&&p.x>=l-wgt*eps&&p.x<=r+wgt*eps;
 }
 bool on_edge(const edg &e,const mdl &m){
-	int cnt=0;
-	for(int i=0; i<2; ++i){
-		cnt+=on_edge(e,m.v[i],0);
-	}
-	for(int i=0; i<2; ++i){
-		cnt+=on_edge(e,(vec){m.v[i].x,m.v[i^1].y},0);
-	}
-	return cnt;
+	int p=0;
+	for(; p<2&&!on_line(e,m.v[p]); ++p);
+	if(p==2) return 0;
+	if(e.a.x==e.b.x) return have_crs(e.a.y,e.a.y,m.v[0].y,m.v[1].y);
+	return have_crs(e.a.x,e.b.x,m.v[0].x,m.v[1].y);
 }
 
 void update_gpos(mdl &gpos,double l,double r,const vec rct,const vec tgt,const double line_y){
@@ -179,7 +186,7 @@ mdl get_great_pos_cl(const cls_s &cl,const vector<edg> ebuk[4],const vec rct,con
 			for(edg e:ebuk[i<<1|1]){
 				double cx=e.a.x;
 				vec p1=(vec){cx,cur_e.a.y},p2=(vec){cx,other_y};
-				if(on_edge((edg){p1,p2},e.a)||on_edge((edg){p1,p2},e.b)){
+				if(on_edge((edg){p1,p2},e.a,0)||on_edge((edg){p1,p2},e.b,0)){
 					if(cx<pa+eps) apx(a,cx);
 					if(cx>pb-eps) apn(b,cx);
 				}
@@ -231,10 +238,12 @@ mdl get_great_pos(vector<cls_s> &clss,int &best_cl,vec rct,vec tgt){// 寻找某
 	rct.flip();
 	mpos[1]=get_great_pos_basic(clss,bcl[1],rct,tgt,0); // 竖着的原矩阵 横向rb
 	for(cls_s &cl:clss) flip_vec(cl);
+	tgt.flip();
 	mpos[2]=get_great_pos_basic(clss,bcl[2],rct,tgt,1); // 横着的原矩阵 竖向rb（坐标系颠倒）
 	rct.flip();
 	mpos[3]=get_great_pos_basic(clss,bcl[3],rct,tgt,1); // 竖着的原矩阵 竖向rb（坐标系颠倒）
 	for(cls_s &cl:clss) flip_vec(cl);
+	tgt.flip();
 	mpos[2].flip(),mpos[3].flip();
 
 	mdl pos=mpos[0];
@@ -282,7 +291,7 @@ void insert_mdl(cls_s &cl,mdl md){ // 将该区域设为不可用区域（假设
 			e.flip();
 			md.flip();
 		}
-		double bk_x=1e9,st_x,ed_x,other_y; // 断点，另一个y
+		double bk_x=1e9,st_x=-1,ed_x=-1,other_y=-1; // 断点，另一个y
 		for(int i=0; i<2; ++i){
 			if(cabs(md.v[i].y-e.a.y)>eps){
 				other_y=md.v[i].y;
@@ -293,6 +302,7 @@ void insert_mdl(cls_s &cl,mdl md){ // 将该区域设为不可用区域（假设
 			}
 			apn(bk_x,md.v[i].x);
 		}
+		assert(st_x>=0&&ed_x>=0&&other_y>=0);
 		apx(bk_x,min(e.a.x,e.b.x));
 		vec pb=vec{bk_x,e.a.y},p1=vec{st_x,e.a.y};
 		vec p2=vec{st_x,other_y},p3=vec{ed_x,other_y},p4=vec{ed_x,e.a.y};
@@ -340,7 +350,7 @@ int main(){
 	int edgcnt,mdlcnt;
 	cin>>edgcnt>>mdlcnt;
 	vector<cls_s> org_cls;
-	get_cls(org_cls,edgcnt,cr);
+	get_cls(org_cls,edgcnt);
 	for(int i=1; i<=mdlcnt; ++i){
 		vec tgt=vec::get(),v=vec::get(); // 返回最优位置的中心？
 		tgt=tgt+v*0.5;
