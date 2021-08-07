@@ -17,10 +17,10 @@ cls_s org_edg;
 
 // gry: 矩形对应的位置	red: 合法区域边框
 // grn: 边界 			blu: 无法放入的矩形
-// cyan: 被放入的矩形
+// wht: 坐标系			cyan: 被放入的矩形
 static const col_s col_gry=col_s{0.4,0.4,0.4},col_red=col_s{0.8,0.1,0.3};
 static const col_s col_grn=col_s{0.1,0.7,0.1},col_blu=col_s{0.2,0.4,1.0};
-static const col_s col_cyan=col_s{0.1,0.8,0.8};
+static const col_s col_wht=col_s{0.8,0.8,0.8},col_cyan=col_s{0.1,0.8,0.8};
 
 template <typename T> inline void apn(T &x,const T y){
 	x=x<y?x:y;
@@ -37,12 +37,20 @@ void add_edg(vector<edg> &eg,map<vec,std::vector<int>> &vec_idx,vec a,vec b){
 	vec_idx[a].push_back(eg.size()-1);
 }
 
-void draw_line(cairo_t *cr,vec x,vec y,col_s c=col_red){
+void draw_line(cairo_t *cr,vec x,vec y,col_s c=col_red,double width=1){
 	cairo_set_source_rgba(cr,c.r,c.g,c.b,1.0);
-	cairo_set_line_width(cr,1);
+	cairo_set_line_width(cr,width);
 	cairo_move_to(cr,x.x*10,x.y*10);
 	cairo_line_to(cr,y.x*10,y.y*10);
 	cairo_stroke(cr);
+}
+void draw_grid(cairo_t *cr,int l){
+	int d=10;
+	for(int i=0; i<=l; i+=d){
+		double p=i;
+		draw_line(cr,(vec){0.0,p},(vec){(double)l,p},col_wht,0.8);
+		draw_line(cr,(vec){p,0.0},(vec){p,(double)l},col_wht,0.8);
+	}
 }
 void draw_mdl(cairo_t *cr,mdl m,col_s c=col_gry,int id=-1){
 	static char ch[10];
@@ -327,6 +335,7 @@ int main(){
 	cairo_surface_t *surface;
 	surface=cairo_image_surface_create(CAIRO_FORMAT_ARGB32,500,500);
 	cairo_t *cr=cairo_create(surface);
+	draw_grid(cr,500);
 
 	int edgcnt,mdlcnt;
 	cin>>edgcnt>>mdlcnt;
