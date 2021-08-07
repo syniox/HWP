@@ -133,16 +133,16 @@ double get_dis(const vec &a,const vec &b){
 template <typename T> void flip_vec(vector <T> &vt){
 	for(T &x:vt) x.flip();
 }
-bool have_crs(double l1,double r1,double l2,double r2){
+bool have_crs(double l1,double r1,double l2,double r2,bool inc){
 	if(l1>r1) std::swap(l1,r1);
 	if(l2>r2) std::swap(l2,r2);
-	return max(l1,l2)<=min(r1,r2);
+	return max(l1,l2)-inc*eps<min(r1,r2);
 }
 bool on_line(const edg &e,const vec &p){
 	if(e.a.x==e.b.x) return cabs(p.x-e.a.x)<eps;
 	return cabs(p.y-e.a.y)<eps;
 }
-bool on_edge(const edg &e,const vec &p,bool inc=1){ // inclusive: 在边界上算不算
+bool on_edge(const edg &e,const vec &p,bool inc){ // inclusive: 在边界上算不算
 	int wgt=inc?1:-1;
 	if(e.a.x==e.b.x){
 		double l=std::min(e.a.y,e.b.y),r=std::max(e.a.y,e.b.y);
@@ -155,8 +155,8 @@ bool on_edge(const edg &e,const mdl &m){
 	int p=0;
 	for(; p<2&&!on_line(e,m.v[p]); ++p);
 	if(p==2) return 0;
-	if(e.a.x==e.b.x) return have_crs(e.a.y,e.a.y,m.v[0].y,m.v[1].y);
-	return have_crs(e.a.x,e.b.x,m.v[0].x,m.v[1].y);
+	if(e.a.x==e.b.x) return have_crs(e.a.y,e.b.y,m.v[0].y,m.v[1].y,1);
+	return have_crs(e.a.x,e.b.x,m.v[0].x,m.v[1].y,1);
 }
 
 void update_gpos(mdl &gpos,double l,double r,const vec rct,const vec tgt,const double line_y){
@@ -185,8 +185,7 @@ mdl get_great_pos_cl(const cls_s &cl,const vector<edg> ebuk[4],const vec rct,con
 		for(int i=0; i<2; ++i){
 			for(edg e:ebuk[i<<1|1]){
 				double cx=e.a.x;
-				vec p1=(vec){cx,cur_e.a.y},p2=(vec){cx,other_y};
-				if(on_edge((edg){p1,p2},e.a,0)||on_edge((edg){p1,p2},e.b,0)){
+				if(have_crs(cur_e.a.y,other_y,e.a.y,e.b.y,0)){
 					if(cx<pa+eps) apx(a,cx);
 					if(cx>pb-eps) apn(b,cx);
 				}
@@ -197,7 +196,7 @@ mdl get_great_pos_cl(const cls_s &cl,const vector<edg> ebuk[4],const vec rct,con
 			if(cabs(e.a.y-line_y)*2>rct.y-eps) continue;
 			if(!cur_e.dr()) std::swap(e.a,e.b);
 			if(e.a.x>ed){
-				update_gpos(gpos,ed,e.a.x,rct,tgt,line_y);
+				update_gpos(gpos,ed,min(e.a.x,b),rct,tgt,line_y);
 			}
 			apx(ed,e.b.x);
 		}
@@ -239,9 +238,9 @@ mdl get_great_pos(vector<cls_s> &clss,int &best_cl,vec rct,vec tgt){// 寻找某
 	mpos[1]=get_great_pos_basic(clss,bcl[1],rct,tgt,0); // 竖着的原矩阵 横向rb
 	for(cls_s &cl:clss) flip_vec(cl);
 	tgt.flip();
-	mpos[2]=get_great_pos_basic(clss,bcl[2],rct,tgt,1); // 横着的原矩阵 竖向rb（坐标系颠倒）
+	mpos[2]=get_great_pos_basic(clss,bcl[2],rct,tgt,1); // 横着的原矩阵 竖向rb 坐标系颠倒
 	rct.flip();
-	mpos[3]=get_great_pos_basic(clss,bcl[3],rct,tgt,1); // 竖着的原矩阵 竖向rb（坐标系颠倒）
+	mpos[3]=get_great_pos_basic(clss,bcl[3],rct,tgt,1); // 竖着的原矩阵 竖向rb 坐标系颠倒
 	for(cls_s &cl:clss) flip_vec(cl);
 	tgt.flip();
 	mpos[2].flip(),mpos[3].flip();
