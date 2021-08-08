@@ -155,8 +155,8 @@ bool on_edge(const edg &e,const mdl &m){
 	int p=0;
 	for(; p<2&&!on_line(e,m.v[p]); ++p);
 	if(p==2) return 0;
-	if(e.a.x==e.b.x) return have_crs(e.a.y,e.b.y,m.v[0].y,m.v[1].y,1);
-	return have_crs(e.a.x,e.b.x,m.v[0].x,m.v[1].y,1);
+	if(e.a.x==e.b.x) return have_crs(e.a.y,e.b.y,m.v[0].y,m.v[1].y,0);
+	return have_crs(e.a.x,e.b.x,m.v[0].x,m.v[1].y,0);
 }
 
 void update_gpos(mdl &gpos,double l,double r,const vec rct,const vec tgt,const double line_y){
@@ -193,7 +193,7 @@ mdl get_great_pos_cl(const cls_s &cl,const vector<edg> ebuk[4],const vec rct,con
 		}
 		double ed=a;
 		for(edg e:ebuk[cur_e.dr()^2]){
-			if(cabs(e.a.y-line_y)*2>rct.y-eps) continue;
+			if(cabs(e.a.y-line_y)*2>rct.y-eps&&cabs(e.a.y-cur_e.a.y)>eps) continue;
 			if(!cur_e.dr()) std::swap(e.a,e.b);
 			if(e.a.x>ed){
 				update_gpos(gpos,ed,min(e.a.x,b),rct,tgt,line_y);
