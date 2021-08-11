@@ -160,6 +160,7 @@ bool on_edge(const edg &e,const mdl &m){
 }
 
 void update_gpos(mdl &gpos,double l,double r,const vec rct,const vec tgt,const double line_y){
+	// 对某一个合法段[l,r] 找到他的最优解并看看能不能更新当前最优答案gpos
 	if(r-l<rct.x) return;
 	double x,rad_x=rct.x*0.5;
 	if(r<tgt.x+rad_x) x=r-rad_x;
@@ -175,6 +176,7 @@ mdl get_great_pos_cl(const cls_s &cl,const vector<edg> ebuk[4],const vec rct,con
 	// O(e(cl)*e) 一个闭合回路的最优解
 	mdl gpos;
 	gpos.set_inf();
+	// 以某条边为基准，看看模块至少有一个角在这贴边上时代价最少能做到多少
 	for(edg cur_e:cl){
 		if(cur_e.dr()&1) continue;
 		bool rvld=(cur_e.dr()==2)^fliped;
@@ -182,6 +184,7 @@ mdl get_great_pos_cl(const cls_s &cl,const vector<edg> ebuk[4],const vec rct,con
 		double pb=max(cur_e.a.x,cur_e.b.x),b=pb+rct.x;
 		double line_y=cur_e.a.y+rct.y*(0.5-rvld);
 		double other_y=cur_e.a.y+(rvld?-rct.y:rct.y);
+		// 寻找两边可以最多向外延伸多少
 		for(int i=0; i<2; ++i){
 			for(edg e:ebuk[i<<1|1]){
 				double cx=e.a.x;
@@ -192,6 +195,7 @@ mdl get_great_pos_cl(const cls_s &cl,const vector<edg> ebuk[4],const vec rct,con
 			}
 		}
 		double ed=a;
+		// 遍历与这条边方向相反的边，找出真正合法的段，并更新答案
 		for(edg e:ebuk[cur_e.dr()^2]){
 			if(cabs(e.a.y-line_y)*2>rct.y-eps&&cabs(e.a.y-cur_e.a.y)>eps) continue;
 			if(!cur_e.dr()) std::swap(e.a,e.b);
