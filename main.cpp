@@ -3,8 +3,10 @@
 #include <cassert>
 #include <algorithm>
 #include <cairo/cairo.h>
-#include "types.h"
 #include <map>
+
+#include "types.h"
+
 static const double eps=1e-6;
 using std::cin; using std::cout; using std::cerr; using std::endl;
 using std::min; using std::max;
@@ -27,18 +29,20 @@ static const col_s col_wht=col_s{0.8,0.8,0.8},col_cyan=col_s{0.1,0.8,0.8};
 struct drawer{
 	cairo_surface_t *surface;
 	cairo_t *cr;
-	char *oput_str; // 输出文件名
+	std::string oput_str; // 输出文件名
 	double d; // 画布边长
-	drawer(char* &&str="oput.png",double l=500){
-		oput_str=str,str=0;
+	drawer(std::string str="oput.png",double l=500){
+		oput_str=str;
 		d=l;
 		surface=cairo_image_surface_create(CAIRO_FORMAT_ARGB32,d,d);
 		cr=cairo_create(surface);
 	}
+	drawer(const drawer &d){assert(0);} // 防止意外传递
 	~drawer(){
-		cairo_surface_write_to_png(surface,oput_str);
 		cairo_surface_destroy(surface);
-		delete[] oput_str;
+	}
+	void flush(){
+		cairo_surface_write_to_png(surface,oput_str.data());
 	}
 	void line(vec x,vec y,col_s c=col_red,double width=1){
 		// 画一条x到y的线段
@@ -48,7 +52,7 @@ struct drawer{
 		cairo_line_to(cr,y.x*10,y.y*10);
 		cairo_stroke(cr);
 	}
-	void grid(int interval){
+	void grid(int interval=10){
 		// 画出cr的参考坐标系
 		for(int i=0; i<=d; i+=interval){
 			double p=i;
@@ -96,55 +100,11 @@ void add_edg(vector<edg> &eg,map<vec,std::vector<int>> &vec_idx,vec a,vec b){
 	vec_idx[a].push_back(eg.size()-1);
 }
 
-void draw_line(cairo_t *cr,vec x,vec y,col_s c=col_red,double width=1){
-	// 画一条x到y的线段
-	cairo_set_source_rgba(cr,c.r,c.g,c.b,1.0);
-	cairo_set_line_width(cr,width);
-	cairo_move_to(cr,x.x*10,x.y*10);
-	cairo_line_to(cr,y.x*10,y.y*10);
-	cairo_stroke(cr);
-}
-void draw_grid(cairo_t *cr,int l){
-	// 画出cr的参考坐标系
-	int d=10;
-	for(int i=0; i<=l; i+=d){
-		double p=i;
-		draw_line(cr,(vec){0.0,p},(vec){(double)l,p},col_wht,0.8);
-		draw_line(cr,(vec){p,0.0},(vec){p,(double)l},col_wht,0.8);
-	}
-}
-void draw_mdl(cairo_t *cr,mdl m,col_s c=col_gry,int id=-1){
-	// 画出模块m
-	static char ch[10];
-	cairo_set_source_rgba(cr,c.r,c.g,c.b,1.0);
-	double x=m.v[0].x,y=m.v[0].y,dx=m.v[1].x-x,dy=m.v[1].y-y;
-	if(dx<0) dx=-dx,x-=dx;
-	if(dy<0) dy=-dy,y-=dy;
-	cairo_rectangle(cr,x*10,y*10,dx*10,dy*10);
-	cairo_fill(cr);
-	draw_line(cr,vec{x,y},vec{x+dx,y},col_grn);
-	draw_line(cr,vec{x,y},vec{x,y+dy},col_grn);
-	draw_line(cr,vec{x+dx,y},vec{x+dx,y+dy},col_grn);
-	draw_line(cr,vec{x,y+dy},vec{x+dx,y+dy},col_grn);
-	if(id==-1) return;
-	sprintf(ch,"%d",id);
-	cairo_set_source_rgba(cr,1,1,1,1);
-	cairo_set_font_size(cr,12);
-	cairo_move_to(cr,(x+dx/2)*10,(y+dy/2)*10);
-	cairo_show_text(cr,ch);
-}
 void dbg_cl(const cls_s &cl){
 	// 在dbg.png上画出这个闭合回路cl的形状和位置
-	const char* oput_png="dbg.png";
-	cairo_surface_t *surface;
-	surface=cairo_image_surface_create(CAIRO_FORMAT_ARGB32,500,500);
-	cairo_t *cr=cairo_create(surface);
-	draw_grid(cr,500);
-	for(edg e:cl){
-		draw_line(cr,e.a,e.b);
-	}
-	cairo_surface_write_to_png(surface,oput_png);
-	cairo_surface_destroy(surface);
+	drawer dbg("dbg.png");
+	dbg.cl(cl);
+	dbg.flush();
 }
 
 void get_cls(vector<cls_s> &clss,const int edgcnt){
@@ -421,10 +381,14 @@ int main(){
 	// 输出：
 	// 共m行，每行输出该模块摆放位置的对角端点
 
+	/*
 	cairo_surface_t *surface;
 	surface=cairo_image_surface_create(CAIRO_FORMAT_ARGB32,500,500);
 	cairo_t *cr=cairo_create(surface);
 	draw_grid(cr,500);
+	*/
+	drawer dw_ans("oput.png",500);
+	dw_ans.grid();
 
 	int edgcnt,mdlcnt;
 	cin>>edgcnt>>mdlcnt;
@@ -436,19 +400,18 @@ int main(){
 		int best_cl=0;
 		mdl mpos=get_great_pos(org_cls,best_cl,v,tgt);
 		if(get_dis(mpos.cntr(),tgt)>1e12){
-			draw_mdl(cr,mdl::build(tgt,v),col_blu,i);
+			dw_ans.mdl(mdl::build(tgt,v),col_blu,i);
 			cout<<i<<": "<<"cannot be put."<<endl;
 		}else{
 			insert_mdl(org_cls[best_cl],mpos);
 			cout<<i<<": "<<mpos.v[0]<<' '<<mpos.v[1]<<endl;
-			draw_mdl(cr,mdl::build(tgt,v),col_cyan,i);
-			draw_mdl(cr,mpos,col_gry,i);
+			dw_ans.mdl(mdl::build(tgt,v),col_cyan,i);
+			dw_ans.mdl(mpos,col_gry,i);
 		}
 	}
 	for(edg e:org_edg){
-		draw_line(cr,e.a,e.b);
+		dw_ans.line(e.a,e.b);
 	}
-	cairo_surface_write_to_png(surface,"test.png");
-	cairo_surface_destroy(surface);
+	dw_ans.flush();
 	return 0;
 }
