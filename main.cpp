@@ -24,6 +24,63 @@ static const col_s col_gry=col_s{0.4,0.4,0.4},col_red=col_s{0.8,0.1,0.3};
 static const col_s col_grn=col_s{0.1,0.7,0.1},col_blu=col_s{0.2,0.4,1.0};
 static const col_s col_wht=col_s{0.8,0.8,0.8},col_cyan=col_s{0.1,0.8,0.8};
 
+struct drawer{
+	cairo_surface_t *surface;
+	cairo_t *cr;
+	char *oput_str; // 输出文件名
+	double d; // 画布边长
+	drawer(char* &&str="oput.png",double l=500){
+		oput_str=str,str=0;
+		d=l;
+		surface=cairo_image_surface_create(CAIRO_FORMAT_ARGB32,d,d);
+		cr=cairo_create(surface);
+	}
+	~drawer(){
+		cairo_surface_write_to_png(surface,oput_str);
+		cairo_surface_destroy(surface);
+		delete[] oput_str;
+	}
+	void line(vec x,vec y,col_s c=col_red,double width=1){
+		// 画一条x到y的线段
+		cairo_set_source_rgba(cr,c.r,c.g,c.b,1.0);
+		cairo_set_line_width(cr,width);
+		cairo_move_to(cr,x.x*10,x.y*10);
+		cairo_line_to(cr,y.x*10,y.y*10);
+		cairo_stroke(cr);
+	}
+	void grid(int interval){
+		// 画出cr的参考坐标系
+		for(int i=0; i<=d; i+=interval){
+			double p=i;
+			line((vec){0.0,p},(vec){d,p},col_wht,0.8);
+			line((vec){p,0.0},(vec){p,d},col_wht,0.8);
+		}
+	}
+	void mdl(mdl m,col_s c=col_gry,int id=-1){
+		// 画出模块m
+		static char ch[10];
+		cairo_set_source_rgba(cr,c.r,c.g,c.b,1.0);
+		double x=m.v[0].x,y=m.v[0].y,dx=m.v[1].x-x,dy=m.v[1].y-y;
+		if(dx<0) dx=-dx,x-=dx;
+		if(dy<0) dy=-dy,y-=dy;
+		cairo_rectangle(cr,x*10,y*10,dx*10,dy*10);
+		cairo_fill(cr);
+		line(vec{x,y},vec{x+dx,y},col_grn);
+		line(vec{x,y},vec{x,y+dy},col_grn);
+		line(vec{x+dx,y},vec{x+dx,y+dy},col_grn);
+		line(vec{x,y+dy},vec{x+dx,y+dy},col_grn);
+		if(id==-1) return;
+		sprintf(ch,"%d",id);
+		cairo_set_source_rgba(cr,1,1,1,1);
+		cairo_set_font_size(cr,12);
+		cairo_move_to(cr,(x+dx/2)*10,(y+dy/2)*10);
+		cairo_show_text(cr,ch);
+	}
+	void cl(const vector<edg> cl){
+		for(edg e:cl) line(e.a,e.b);
+	}
+};
+
 template <typename T> inline void apn(T &x,const T y){
 	x=x<=y?x:y;
 }
