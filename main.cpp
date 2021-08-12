@@ -11,6 +11,8 @@ using std::min; using std::max;
 using std::vector;
 using std::map;
 // x,y: 平面直角坐标系
+// n: 模块数 e: 边数 e(cl): 某个闭合回路的边数
+// 时间： O(e*log(e)) + O(n*e*e)
 
 using cls_s=vector<edg>;
 cls_s org_edg;
@@ -23,10 +25,10 @@ static const col_s col_grn=col_s{0.1,0.7,0.1},col_blu=col_s{0.2,0.4,1.0};
 static const col_s col_wht=col_s{0.8,0.8,0.8},col_cyan=col_s{0.1,0.8,0.8};
 
 template <typename T> inline void apn(T &x,const T y){
-	x=x<y?x:y;
+	x=x<=y?x:y;
 }
 template <typename T> inline void apx(T &x,const T y){
-	x=x>y?x:y;
+	x=x>=y?x:y;
 }
 template <typename T> const T cabs(const T &x){
 	return x<0?-x:x;
@@ -38,6 +40,7 @@ void add_edg(vector<edg> &eg,map<vec,std::vector<int>> &vec_idx,vec a,vec b){
 }
 
 void draw_line(cairo_t *cr,vec x,vec y,col_s c=col_red,double width=1){
+	// 画一条x到y的线段
 	cairo_set_source_rgba(cr,c.r,c.g,c.b,1.0);
 	cairo_set_line_width(cr,width);
 	cairo_move_to(cr,x.x*10,x.y*10);
@@ -45,6 +48,7 @@ void draw_line(cairo_t *cr,vec x,vec y,col_s c=col_red,double width=1){
 	cairo_stroke(cr);
 }
 void draw_grid(cairo_t *cr,int l){
+	// 画出cr的参考坐标系
 	int d=10;
 	for(int i=0; i<=l; i+=d){
 		double p=i;
@@ -53,6 +57,7 @@ void draw_grid(cairo_t *cr,int l){
 	}
 }
 void draw_mdl(cairo_t *cr,mdl m,col_s c=col_gry,int id=-1){
+	// 画出模块m
 	static char ch[10];
 	cairo_set_source_rgba(cr,c.r,c.g,c.b,1.0);
 	double x=m.v[0].x,y=m.v[0].y,dx=m.v[1].x-x,dy=m.v[1].y-y;
@@ -72,6 +77,7 @@ void draw_mdl(cairo_t *cr,mdl m,col_s c=col_gry,int id=-1){
 	cairo_show_text(cr,ch);
 }
 void dbg_cl(const cls_s &cl){
+	// 在dbg.png上画出这个闭合回路cl的形状和位置
 	const char* oput_png="dbg.png";
 	cairo_surface_t *surface;
 	surface=cairo_image_surface_create(CAIRO_FORMAT_ARGB32,500,500);
@@ -84,10 +90,12 @@ void dbg_cl(const cls_s &cl){
 	cairo_surface_destroy(surface);
 }
 
-void get_cls(vector<cls_s> &clss,const int edgcnt){ // 根据题目给出的边构建rectilinear block
+void get_cls(vector<cls_s> &clss,const int edgcnt){
+	// O(e*log(e)) 根据题目给出的边构建出若干个闭合回路
 	vector<edg> eg;
 	map<vec,vector<int>> vec_idx;
 	vector<bool> vis;
+	// 输入边并进行存储
 	for(int i=1,dir; i<=edgcnt; ++i){
 		vec a=vec::get(),b=vec::get();
 		cin>>dir;
@@ -96,7 +104,7 @@ void get_cls(vector<cls_s> &clss,const int edgcnt){ // 根据题目给出的边�
 		if(a.x==b.x||a.y==b.y){
 			add_edg(eg,vec_idx,a,b);
 		}else{
-			vec c; // 斜边拆分
+			vec c; // 把斜边拆分成横边和竖边
 			if(a.x<b.x&&a.y<b.y) c=(vec){a.x,b.y};
 			if(a.x>b.x&&a.y<b.y) c=(vec){b.x,a.y};
 			if(a.x>b.x&&a.y>b.y) c=(vec){a.x,b.y};
@@ -105,6 +113,7 @@ void get_cls(vector<cls_s> &clss,const int edgcnt){ // 根据题目给出的边�
 			add_edg(eg,vec_idx,c,b);
 		}
 	}
+	// 构建闭合回路
 	vis.resize(eg.size());
 	for(int i=0; i<(int)eg.size(); ++i){
 		if(vis[i]) continue;
@@ -134,6 +143,7 @@ template <typename T> void flip_vec(vector <T> &vt){
 	for(T &x:vt) x.flip();
 }
 bool have_crs(double l1,double r1,double l2,double r2,bool inc){
+	// (l1,r1)和(l2,r2)是否有相交的部分，inc(inclusive): 是否包含边界
 	if(l1>r1) std::swap(l1,r1);
 	if(l2>r2) std::swap(l2,r2);
 	return max(l1,l2)-inc*eps<min(r1,r2);
@@ -142,7 +152,8 @@ bool on_line(const edg &e,const vec &p){
 	if(e.a.x==e.b.x) return cabs(p.x-e.a.x)<eps;
 	return cabs(p.y-e.a.y)<eps;
 }
-bool on_edge(const edg &e,const vec &p,bool inc){ // inclusive: 在边界上算不算
+bool on_edge(const edg &e,const vec &p,bool inc){
+	// 判断一个向量是否在这条边上，inc(inclusive): 在边界上算不算
 	int wgt=inc?1:-1;
 	if(e.a.x==e.b.x){
 		double l=std::min(e.a.y,e.b.y),r=std::max(e.a.y,e.b.y);
@@ -152,6 +163,7 @@ bool on_edge(const edg &e,const vec &p,bool inc){ // inclusive: 在边界上算�
 	return cabs(p.y-e.a.y)<eps&&p.x>=l-wgt*eps&&p.x<=r+wgt*eps;
 }
 bool on_edge(const edg &e,const mdl &m){
+	// 模块m的边是否和边e有相交的部分
 	int p=0;
 	for(; p<2&&!on_line(e,m.v[p]); ++p);
 	if(p==2) return 0;
@@ -160,6 +172,7 @@ bool on_edge(const edg &e,const mdl &m){
 }
 
 void update_gpos(mdl &gpos,double l,double r,const vec rct,const vec tgt,const double line_y){
+	// 对某一个合法段[l,r] 找到他的最优解并看看能不能更新当前最优答案gpos
 	if(r-l<rct.x) return;
 	double x,rad_x=rct.x*0.5;
 	if(r<tgt.x+rad_x) x=r-rad_x;
@@ -172,9 +185,10 @@ void update_gpos(mdl &gpos,double l,double r,const vec rct,const vec tgt,const d
 }
 
 mdl get_great_pos_cl(const cls_s &cl,const vector<edg> ebuk[4],const vec rct,const vec tgt,const bool fliped){
-	// O(e(cl)*e) 一个闭合回路的最优解
+	// O(e(cl)*e) 闭合回路cl的最优解
 	mdl gpos;
 	gpos.set_inf();
+	// 以某条边为基准，看看模块至少有一个角在这贴边上时代价最少能做到多少
 	for(edg cur_e:cl){
 		if(cur_e.dr()&1) continue;
 		bool rvld=(cur_e.dr()==2)^fliped;
@@ -182,6 +196,7 @@ mdl get_great_pos_cl(const cls_s &cl,const vector<edg> ebuk[4],const vec rct,con
 		double pb=max(cur_e.a.x,cur_e.b.x),b=pb+rct.x;
 		double line_y=cur_e.a.y+rct.y*(0.5-rvld);
 		double other_y=cur_e.a.y+(rvld?-rct.y:rct.y);
+		// 寻找两边可以最多向外延伸多少
 		for(int i=0; i<2; ++i){
 			for(edg e:ebuk[i<<1|1]){
 				double cx=e.a.x;
@@ -192,6 +207,7 @@ mdl get_great_pos_cl(const cls_s &cl,const vector<edg> ebuk[4],const vec rct,con
 			}
 		}
 		double ed=a;
+		// 遍历与这条边方向相反的边，找出合法的段，计算最小代价并更新答案
 		for(edg e:ebuk[cur_e.dr()^2]){
 			if(cabs(e.a.y-line_y)*2>rct.y-eps&&cabs(e.a.y-cur_e.a.y)>eps) continue;
 			if(!cur_e.dr()) std::swap(e.a,e.b);
@@ -206,7 +222,7 @@ mdl get_great_pos_cl(const cls_s &cl,const vector<edg> ebuk[4],const vec rct,con
 }
 
 mdl get_great_pos_basic(const vector<cls_s> &clss,int &best_cl,const vec rct,const vec tgt,const bool fliped){
-	// O(e^2) 一个坐标系的最优解（横向，坐标系是否经过变换）
+	// O(e*e) 一个坐标系和模块方向的最优解（横向，坐标系是否经过变换）
 	vector<edg> ebuk[4];
 	for(cls_s cl:clss){
 		for(edg e:cl) ebuk[e.dr()].push_back(e);
@@ -226,21 +242,21 @@ mdl get_great_pos_basic(const vector<cls_s> &clss,int &best_cl,const vec rct,con
 	return gpos;
 }
 
-mdl get_great_pos(vector<cls_s> &clss,int &best_cl,vec rct,vec tgt){// 寻找某个闭包的最优位置
-	// cl表示搜寻的闭包
+mdl get_great_pos(vector<cls_s> &clss,int &best_cl,vec rct,vec tgt){
+	// O(e*e) 寻找模块摆放的最优位置
 	// 函数返回模块最后占用的位置
 	// TODO: 把排序函数从basic中提出来
 	// TODO: flip_vec &cl safe?
 	mdl mpos[4];
 	int bcl[4]={0};
-	mpos[0]=get_great_pos_basic(clss,bcl[0],rct,tgt,0); // 横着的原矩阵 横向rb
+	mpos[0]=get_great_pos_basic(clss,bcl[0],rct,tgt,0); // 横着的原矩阵 横边
 	rct.flip();
-	mpos[1]=get_great_pos_basic(clss,bcl[1],rct,tgt,0); // 竖着的原矩阵 横向rb
+	mpos[1]=get_great_pos_basic(clss,bcl[1],rct,tgt,0); // 竖着的原矩阵 横边
 	for(cls_s &cl:clss) flip_vec(cl);
 	tgt.flip();
-	mpos[2]=get_great_pos_basic(clss,bcl[2],rct,tgt,1); // 横着的原矩阵 竖向rb 坐标系颠倒
+	mpos[2]=get_great_pos_basic(clss,bcl[2],rct,tgt,1); // 横着的原矩阵 竖边 坐标系颠倒
 	rct.flip();
-	mpos[3]=get_great_pos_basic(clss,bcl[3],rct,tgt,1); // 竖着的原矩阵 竖向rb 坐标系颠倒
+	mpos[3]=get_great_pos_basic(clss,bcl[3],rct,tgt,1); // 竖着的原矩阵 竖边 坐标系颠倒
 	for(cls_s &cl:clss) flip_vec(cl);
 	tgt.flip();
 	mpos[2].flip(),mpos[3].flip();
@@ -256,6 +272,7 @@ mdl get_great_pos(vector<cls_s> &clss,int &best_cl,vec rct,vec tgt){// 寻找某
 }
 
 void sanitize_vec(cls_s &cl){
+	//O(e(cl)*e(cl)) 删除长度为0的边，合并相邻且方向相反的边
 	// TODO: optimize
 	for(int cnt=-1; cnt; ){
 		cnt=0;
@@ -278,9 +295,13 @@ void sanitize_vec(cls_s &cl){
 	}
 }
 
-void insert_mdl(cls_s &cl,mdl md){ // 将该区域设为不可用区域（假设该模块紧贴边缘）
+void insert_mdl(cls_s &cl,mdl md){
+	// O(e**2) 将模块摆放的区域设为不可用区域（假设该模块紧贴边缘）
+	// 找到一条和模块相邻的边，在他们的公共位置上找一个断点，把它作为绘画的起点和终点，
+	// 画出模块的轮廓，然后对无效的边界进行整理
 	using cls_i=cls_s::iterator;
 	for(cls_i it=cl.begin(); it!=cl.end(); ++it){
+		// 找一条与这个模块相邻的边
 		edg e=*it;
 		if(!on_edge(e,md)) continue;
 		bool fliped=0;
@@ -290,6 +311,7 @@ void insert_mdl(cls_s &cl,mdl md){ // 将该区域设为不可用区域（假设
 			e.flip();
 			md.flip();
 		}
+		// 寻找切分点和模块的另一边的位置
 		double bk_x=1e9,st_x=-1,ed_x=-1,other_y=-1; // 断点，另一个y
 		for(int i=0; i<2; ++i){
 			if(cabs(md.v[i].y-e.a.y)>eps){
@@ -319,6 +341,7 @@ void insert_mdl(cls_s &cl,mdl md){ // 将该区域设为不可用区域（假设
 }
 
 double calc_res(vector<mdl> m1,vector<mdl> m2){
+	// O(n)  计算一组方案的连线长度和
 	assert(m1.size()==m2.size());
 	int sz=m1.size();
 	double res=0;
