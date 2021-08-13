@@ -17,8 +17,6 @@ using std::map;
 // n: 模块数 e: 边数 e(cl): 某个闭合回路的边数
 // 时间： O(e*log(e)) + O(n*e*e)
 
-cls_s org_edg;
-
 template <typename T> inline void apn(T &x,const T y){
 	x=x<=y?x:y;
 }
@@ -44,7 +42,6 @@ void get_cls(vector<cls_s> &clss,const int edgcnt){
 		vec a=vec::get(),b=vec::get();
 		cin>>dir;
 		if(dir) std::swap(a,b);
-		org_edg.push_back(edg{a,b});
 		if(a.x==b.x||a.y==b.y){
 			add_edg(eg,vec_idx,a,b);
 		}else{
@@ -330,8 +327,8 @@ int main(){
 			dw_ans.draw_mdl(mpos,col_grey,i);
 		}
 	}
-	for(edg e:org_edg){
-		dw_ans.draw_line(e.a,e.b);
+	for(cls_s cl:org_cls){
+		dw_ans.draw_cl(cl);
 	}
 	dw_ans.flush();
 	return 0;
