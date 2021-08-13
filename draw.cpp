@@ -30,8 +30,8 @@ void drawer::draw_grid(int interval){
 	// 画出cr的参考坐标系
 	for(int i=0; i<=d; i+=interval){
 		double p=i;
-		draw_line((vec){0.0,p},(vec){d,p},col_wht,0.8);
-		draw_line((vec){p,0.0},(vec){p,d},col_wht,0.8);
+		draw_line((vec){0.0,p},(vec){d,p},col_white,0.8);
+		draw_line((vec){p,0.0},(vec){p,d},col_white,0.8);
 	}
 }
 void drawer::draw_mdl(mdl m,col_s c,int id){
@@ -43,10 +43,10 @@ void drawer::draw_mdl(mdl m,col_s c,int id){
 	if(dy<0) dy=-dy,y-=dy;
 	cairo_rectangle(cr,x*10,y*10,dx*10,dy*10);
 	cairo_fill(cr);
-	draw_line(vec{x,y},vec{x+dx,y},col_grn);
-	draw_line(vec{x,y},vec{x,y+dy},col_grn);
-	draw_line(vec{x+dx,y},vec{x+dx,y+dy},col_grn);
-	draw_line(vec{x,y+dy},vec{x+dx,y+dy},col_grn);
+	draw_line(vec{x,y},vec{x+dx,y},col_green);
+	draw_line(vec{x,y},vec{x,y+dy},col_green);
+	draw_line(vec{x+dx,y},vec{x+dx,y+dy},col_green);
+	draw_line(vec{x,y+dy},vec{x+dx,y+dy},col_green);
 	if(id==-1) return;
 	sprintf(ch,"%d",id);
 	cairo_set_source_rgba(cr,1,1,1,1);

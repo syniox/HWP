@@ -86,11 +86,11 @@ double get_dis(const vec &a,const vec &b){
 template <typename T> void flip_vec(vector <T> &vt){
 	for(T &x:vt) x.flip();
 }
-bool have_crs(double l1,double r1,double l2,double r2,bool inc){
+double get_overlap(double l1,double r1,double l2,double r2){
 	// (l1,r1)和(l2,r2)是否有相交的部分，inc(inclusive): 是否包含边界
 	if(l1>r1) std::swap(l1,r1);
 	if(l2>r2) std::swap(l2,r2);
-	return max(l1,l2)-inc*eps<min(r1,r2);
+	return min(r1,r2)-max(l1,l2);
 }
 bool on_line(const edg &e,const vec &p){
 	if(e.a.x==e.b.x) return cabs(p.x-e.a.x)<eps;
@@ -111,8 +111,8 @@ bool on_edge(const edg &e,const mdl &m){
 	int p=0;
 	for(; p<2&&!on_line(e,m.v[p]); ++p);
 	if(p==2) return 0;
-	if(e.a.x==e.b.x) return have_crs(e.a.y,e.b.y,m.v[0].y,m.v[1].y,0);
-	return have_crs(e.a.x,e.b.x,m.v[0].x,m.v[1].y,0);
+	if(e.a.x==e.b.x) return get_overlap(e.a.y,e.b.y,m.v[0].y,m.v[1].y)>eps;
+	return get_overlap(e.a.x,e.b.x,m.v[0].x,m.v[1].y)>eps;
 }
 
 void update_gpos(mdl &gpos,double l,double r,const vec rct,const vec tgt,const double line_y){
@@ -144,7 +144,7 @@ mdl get_great_pos_cl(const cls_s &cl,const vector<edg> ebuk[4],const vec rct,con
 		for(int i=0; i<2; ++i){
 			for(edg e:ebuk[i<<1|1]){
 				double cx=e.a.x;
-				if(have_crs(cur_e.a.y,other_y,e.a.y,e.b.y,0)){
+				if(get_overlap(cur_e.a.y,other_y,e.a.y,e.b.y)>eps){
 					if(cx<pa+eps) apx(a,cx);
 					if(cx>pb-eps) apn(b,cx);
 				}
@@ -321,13 +321,13 @@ int main(){
 		int best_cl=0;
 		mdl mpos=get_great_pos(org_cls,best_cl,v,tgt);
 		if(get_dis(mpos.cntr(),tgt)>1e12){
-			dw_ans.draw_mdl(mdl::build(tgt,v),col_blu,i);
+			dw_ans.draw_mdl(mdl::build(tgt,v),col_blue,i);
 			cout<<i<<": "<<"cannot be put."<<endl;
 		}else{
 			insert_mdl(org_cls[best_cl],mpos);
 			cout<<i<<": "<<mpos.v[0]<<' '<<mpos.v[1]<<endl;
 			dw_ans.draw_mdl(mdl::build(tgt,v),col_cyan,i);
-			dw_ans.draw_mdl(mpos,col_gry,i);
+			dw_ans.draw_mdl(mpos,col_grey,i);
 		}
 	}
 	for(edg e:org_edg){
