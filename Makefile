@@ -5,7 +5,10 @@ all: main data
 ###
 
 main: main.o types.o draw.o
-	g++ $(CXXFLAGS) -o main main.o types.o draw.o -lcairo
+	g++ $(CXXFLAGS) -o main $^ -lcairo
+
+types.o: types.h
+draw.o: draw.h types.h
 
 ###
 
