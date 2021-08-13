@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <vector>
 // x,y: 平面直角坐标系
 
 struct col_s{
@@ -24,6 +25,8 @@ struct mdl{ // module, 记录该模块长方形的四个顶点，保证连续
 	void set_inf(); // 初始化成无穷大
 	static mdl build(const vec &ctr,const vec &rct); // 根据中心坐标ctr和模块长宽rct构建模块
 };
+
+using cls_s=std::vector<edg>;
 
 template <typename T> vec operator * (const vec &v,const T x);
 double operator *(const vec &a,const vec &b);
