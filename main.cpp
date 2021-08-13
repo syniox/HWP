@@ -359,6 +359,7 @@ int main(){
 		cerr<<i+1<<": "<<res_mdl[i].v[0]<<' '<<res_mdl[i].v[1]<<endl;
 		dw_ans.draw_mdl(res_mdl[i],col_grey,i+1);
 	}
+	cerr<<"total length: "<<res_len<<endl;
 	for(cls_s cl:org_cls){
 		dw_ans.draw_cl(cl);
 	}
