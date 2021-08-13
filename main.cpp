@@ -109,7 +109,7 @@ bool on_edge(const edg &e,const mdl &m){
 	for(; p<2&&!on_line(e,m.v[p]); ++p);
 	if(p==2) return 0;
 	if(e.a.x==e.b.x) return get_overlap(e.a.y,e.b.y,m.v[0].y,m.v[1].y)>eps;
-	return get_overlap(e.a.x,e.b.x,m.v[0].x,m.v[1].y)>eps;
+	return get_overlap(e.a.x,e.b.x,m.v[0].x,m.v[1].x)>eps;
 }
 
 void update_gpos(mdl &gpos,double l,double r,const vec rct,const vec tgt,const double line_y){
@@ -133,8 +133,8 @@ mdl get_great_pos_cl(const cls_s &cl,const vector<edg> ebuk[4],const vec rct,con
 	for(edg cur_e:cl){
 		if(cur_e.dr()&1) continue;
 		bool rvld=(cur_e.dr()==2)^fliped;
-		double pa=min(cur_e.a.x,cur_e.b.x),a=pa-rct.x;
-		double pb=max(cur_e.a.x,cur_e.b.x),b=pb+rct.x;
+		double pa=min(cur_e.a.x,cur_e.b.x),a=pa-rct.x+eps*2;
+		double pb=max(cur_e.a.x,cur_e.b.x),b=pb+rct.x-eps*2;
 		double line_y=cur_e.a.y+rct.y*(0.5-rvld);
 		double other_y=cur_e.a.y+(rvld?-rct.y:rct.y);
 		// 寻找两边可以最多向外延伸多少
@@ -283,7 +283,7 @@ void insert_mdl(cls_s &cl,mdl md){
 
 double calc_res(vector<mdl> m1,vector<mdl> m2){
 	// O(n)  计算一组方案的连线长度和
-	assert(m1.size()==m2.size());
+	if(m1.size()!=m2.size()) return 1e18;
 	int sz=m1.size();
 	double res=0;
 	for(int i=0; i<sz; ++i){
@@ -293,8 +293,26 @@ double calc_res(vector<mdl> m1,vector<mdl> m2){
 	return res;
 }
 
+vector<mdl> solve_seq(vector<cls_s> clss,const vector<int> &seq,const vector<mdl> &mds){
+	// O(n*e*e) 对一个给定的模块摆放优先顺序做贪心最优解
+	vector<mdl> res(seq.size());
+	for(int id:seq){
+		vec tgt=mds[id].cntr();
+		vec v=(vec){cabs(mds[id].v[0].x-mds[id].v[1].x),cabs(mds[id].v[0].y-mds[id].v[1].y)};
+		int best_cl=0;
+		mdl mpos=get_great_pos(clss,best_cl,v,tgt);
+		if(get_dis(mpos.cntr(),tgt)>1e12){
+			res[id].set_inf();
+		}else{
+			insert_mdl(clss[best_cl],mpos);
+			res[id]=mpos;
+		}
+	}
+	return res;
+}
+
 int main(){
-	// 输入格式1：
+	// 输入格式1：(当前使用格式)
 	// 第一行输入空白区域数量n和模块数量m
 	// 接下来n行，每行第一个数是e，表示该空白区域的边界点数；接下来2e个数，依次表示边界上逆时针顺序的点的坐标；
 	// 接下来m行，每行4个数w, h, x, y，表示矩形的最佳位置是(x,y)到(x+w, y+h)画出的矩形。
@@ -311,21 +329,35 @@ int main(){
 	int edgcnt,mdlcnt;
 	cin>>edgcnt>>mdlcnt;
 	vector<cls_s> org_cls;
+	vector<mdl> org_mdl(mdlcnt);
 	get_cls(org_cls,edgcnt);
-	for(int i=1; i<=mdlcnt; ++i){
-		vec tgt=vec::get(),v=vec::get(); // 返回最优位置的中心？
+	for(int i=0; i<mdlcnt; ++i){
+		vec tgt=vec::get(),v=vec::get();
 		tgt=tgt+v*0.5;
-		int best_cl=0;
-		mdl mpos=get_great_pos(org_cls,best_cl,v,tgt);
-		if(get_dis(mpos.cntr(),tgt)>1e12){
-			dw_ans.draw_mdl(mdl::build(tgt,v),col_blue,i);
-			cout<<i<<": "<<"cannot be put."<<endl;
-		}else{
-			insert_mdl(org_cls[best_cl],mpos);
-			cout<<i<<": "<<mpos.v[0]<<' '<<mpos.v[1]<<endl;
-			dw_ans.draw_mdl(mdl::build(tgt,v),col_cyan,i);
-			dw_ans.draw_mdl(mpos,col_grey,i);
+		org_mdl[i]=mdl::build(tgt,v);
+	}
+	vector<int> idx(mdlcnt);
+	for(int i=0; i<mdlcnt; ++i) idx[i]=i;
+	std::random_shuffle(idx.begin(),idx.end());
+	vector<mdl> res_mdl=solve_seq(org_cls,idx,org_mdl);
+	double res_len=calc_res(res_mdl,org_mdl);
+	for(int times=5; times--; ){
+		random_shuffle(idx.begin(),idx.end());
+		vector<mdl> cur_mdl=solve_seq(org_cls,idx,org_mdl);
+		double cur_len=calc_res(cur_mdl,org_mdl);
+		if(res_len>cur_len){
+			res_len=cur_len;
+			res_mdl.swap(cur_mdl);
 		}
+	}
+	for(int i=0; i<mdlcnt; ++i){
+		if(res_mdl[i].v[0].x<0){
+			dw_ans.draw_mdl(org_mdl[i],col_blue,i+1);
+			cerr<<"Cannot put "<<i+1<<'.'<<endl;
+		}
+		dw_ans.draw_mdl(org_mdl[i],col_cyan,i+1);
+		cerr<<i+1<<": "<<res_mdl[i].v[0]<<' '<<res_mdl[i].v[1]<<endl;
+		dw_ans.draw_mdl(res_mdl[i],col_grey,i+1);
 	}
 	for(cls_s cl:org_cls){
 		dw_ans.draw_cl(cl);

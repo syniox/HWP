@@ -40,7 +40,7 @@ std::ostream& operator << (std::ostream &out,const edg &e){
 	return out;
 }
 
-int edg::dr(){ // 返回向量方向，右0上1左2下3
+int edg::dr()const{ // 返回向量方向，右0上1左2下3
 	assert(a.x==b.x||a.y==b.y);
 	assert(!(a==b));
 	if(a.y==b.y) return (a.x>b.x)<<1;
@@ -49,11 +49,11 @@ int edg::dr(){ // 返回向量方向，右0上1左2下3
 void edg::flip(){
 	a.flip(),b.flip();
 }
-bool edg::ispnt(){
+bool edg::ispnt()const{
 	return a==b;
 }
 
-vec mdl::cntr(){
+vec mdl::cntr()const{
 	return (v[0]+v[1])*0.5;
 }
 void mdl::flip(){

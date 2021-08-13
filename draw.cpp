@@ -54,7 +54,7 @@ void drawer::draw_mdl(mdl m,col_s c,int id){
 	cairo_move_to(cr,(x+dx/2)*10,(y+dy/2)*10);
 	cairo_show_text(cr,ch);
 }
-void drawer::draw_cl(const cls_s cl){
+void drawer::draw_cl(const cls_s &cl){
 	for(edg e:cl) draw_line(e.a,e.b);
 }
 
@@ -62,5 +62,6 @@ void dbg_cl(const cls_s &cl){
 	// 在dbg.png上画出这个闭合回路cl的形状和位置
 	drawer dbg("dbg.png");
 	dbg.draw_cl(cl);
+	dbg.draw_grid();
 	dbg.flush();
 }
