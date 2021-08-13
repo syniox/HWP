@@ -1,22 +1,15 @@
-FLAGS=-std=c++11 -g -Wall -Wextra -fsanitize=undefined
+CXXFLAGS+=-std=c++11 -g -Wall -Wextra -fsanitize=undefined
 
 all: main data
 
 ###
 
-main: main.o types.o
-	g++ -o main main.o types.o $(FLAGS) -lcairo
-
-main.o: main.cpp
-	g++ -c main.cpp $(FLAGS)
-
-types.o: types.cpp
-	g++ -c types.cpp $(FLAGS)
+main: main.o types.o draw.o
+	g++ $(CXXFLAGS) -o main main.o types.o draw.o -lcairo
 
 ###
 
 data: data.cpp
-	g++ data.cpp -o data $(FLAGS)
 
 ###
 
