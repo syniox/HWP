@@ -2,6 +2,7 @@
 #include <vector>
 #include <cassert>
 #include <algorithm>
+#include <sstream>
 #include <cairo/cairo.h>
 #include <map>
 
@@ -32,48 +33,25 @@ void add_edg(vector<edg> &eg,map<vec,std::vector<int>> &vec_idx,vec a,vec b){
 	vec_idx[a].push_back(eg.size()-1);
 }
 
-void get_cls(vector<cls_s> &clss,const int edgcnt){
+void san_str(string &str){
+	std::replace(str.begin(),str.end(),'(',' ');
+	std::replace(str.begin(),str.end(),')',' ');
+	std::replace(str.begin(),str.end(),',',' ');
+}
+
+void get_cls(vector<cls_s> &clss){
 	// O(e*log(e)) 根据题目给出的边构建出若干个闭合回路
-	vector<edg> eg;
-	map<vec,vector<int>> vec_idx;
-	vector<bool> vis;
-	// 输入边并进行存储
-	for(int i=1,dir; i<=edgcnt; ++i){
-		vec a=vec::get(),b=vec::get();
-		cin>>dir;
-		if(dir) std::swap(a,b);
-		if(a.x==b.x||a.y==b.y){
-			add_edg(eg,vec_idx,a,b);
-		}else{
-			vec c; // 把斜边拆分成横边和竖边
-			if(a.x<b.x&&a.y<b.y) c=(vec){a.x,b.y};
-			if(a.x>b.x&&a.y<b.y) c=(vec){b.x,a.y};
-			if(a.x>b.x&&a.y>b.y) c=(vec){a.x,b.y};
-			if(a.x<b.x&&a.y>b.y) c=(vec){b.x,a.y};
-			add_edg(eg,vec_idx,a,c);
-			add_edg(eg,vec_idx,c,b);
+	for(int i=0; i<(int)clss.size(); ++i){
+		std::string str;
+		getline(cin,str);
+		san_str(str);
+		std::istringstream is(str);
+		double x0,y0,x1,y1,x2,y2;
+		is>>x0>>y0;
+		for(x1=x0,y1=y0; ss>>x2>>y2; x1=x2,y1=y2){
+			clss[i].push_back((edg){(vec){x1,y1},(vec){x2,y2}});
 		}
-	}
-	// 构建闭合回路
-	vis.resize(eg.size());
-	for(int i=0; i<(int)eg.size(); ++i){
-		if(vis[i]) continue;
-		clss.push_back(cls_s());
-		clss.rbegin()->push_back(eg[i]);
-		for(int id=i,cnt=0; cnt<1e5; ++cnt){ // 防止数据不合法？
-			int curdr=eg[id].dr(),res=id;
-			vis[id]=1;
-			for(int j:vec_idx[eg[id].b]){ // WIP
-				assert(eg[j].a==eg[id].b);
-				if(vis[j]&&j!=i) continue;
-				if(res==id||((curdr-eg[res].dr()+4)&3)<((curdr-eg[j].dr()+4)&3))
-					res=j;
-			}
-			assert(res!=id);
-			if(res==i) break;
-			id=res;
-			clss.rbegin()->push_back(eg[id]);
-		}
+		clss[i].push_back((vec){x2,y2},(vec){x0,y0});
 	}
 }
 
@@ -122,6 +100,14 @@ void update_gpos(mdl &gpos,double l,double r,const vec rct,const vec tgt,const d
 	mdl neo=mdl::build((vec){x,line_y},rct);
 	if(get_dis(neo.cntr(),tgt)<get_dis(gpos.cntr(),tgt)){
 		gpos=neo;
+	}
+}
+
+void toposort(vector<mdl> &idx,vector<vector<int>> &mdl_nxt){
+	int n=idx.size();
+	vector<bool> vt(n);
+	for(int i=0; i<n; ++i){
+
 	}
 }
 
@@ -312,27 +298,41 @@ vector<mdl> solve_seq(vector<cls_s> clss,const vector<int> &seq,const vector<mdl
 }
 
 int main(){
-	// 输入格式1：(当前使用格式)
+	// 输入格式1：（华为）
+	// 第一行输入闭合回路个数n，模块个数m
+	// 接下来n行，每一行按顺序输入该闭合回路上的所有点(x,y)
+	// 再下来m行，每行输入模块代号，长，宽，x和y坐标
+	// 输入格式2：
 	// 第一行输入空白区域数量n和模块数量m
 	// 接下来n行，每行第一个数是e，表示该空白区域的边界点数；接下来2e个数，依次表示边界上逆时针顺序的点的坐标；
 	// 接下来m行，每行4个数w, h, x, y，表示矩形的最佳位置是(x,y)到(x+w, y+h)画出的矩形。
-	// 输入2：
-	// 第一行输入有多少条边界e和多少个模块m
-	// 接下来e行输入每条边（向量）的起止坐标x1,y1,x2,y2和空白区域的位置在向量的左边还是右边，左边为0右边为1
-	// 接下来m行每行输入4个数，代表该模块的长和宽，最优位置中心的x坐标和y坐标
-	// 输出：
-	// 共m行，每行输出该模块摆放位置的对角端点
 
 	drawer dw_ans("oput.png");
 	dw_ans.draw_grid();
 
-	int edgcnt,mdlcnt;
-	cin>>edgcnt>>mdlcnt;
-	vector<cls_s> org_cls;
-	vector<mdl> org_mdl(mdlcnt);
-	get_cls(org_cls,edgcnt);
+	int clcnt,mdlcnt;
+	cin>>clcnt>>mdlcnt;
+	vector<cls_s> org_cls(clcnt);
+	vector<mdl> org_mdl(mdlcnt); // 模组最佳位置
+	vector<string> mdl_name(mdlcnt); // 模组代号
+	vector<string,int> mdl_idx(mdlcnt); // 模组编号
+	vector<vector<int>> mdl_nxt(mdlcnt); // 连接点在它上面的模组
+	get_cls(org_cls);
 	for(int i=0; i<mdlcnt; ++i){
-		vec tgt=vec::get(),v=vec::get();
+		cin>>mdl_id[i];
+		vec v=vec::get(),tgt;
+		string str;
+		if(str[0]=='('){
+			san_str(str);
+			std::istringstream is(str);
+			double x,y;
+			is>>x>>y;
+			tgt=(vec){x,y};
+		}else{
+			int fa=mdl_idx[str];
+			mdl_nxt[fa].push_back(i);
+		}
+		cin>>str;
 		tgt=tgt+v*0.5;
 		org_mdl[i]=mdl::build(tgt,v);
 	}
