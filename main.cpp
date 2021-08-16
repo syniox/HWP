@@ -3,6 +3,7 @@
 #include <cassert>
 #include <algorithm>
 #include <cairo/cairo.h>
+#include <sstream>
 #include <map>
 
 #include "types.h"
@@ -32,47 +33,31 @@ void add_edg(vector<edg> &eg,map<vec,std::vector<int>> &vec_idx,vec a,vec b){
 	vec_idx[a].push_back(eg.size()-1);
 }
 
-void get_cls(vector<cls_s> &clss,const int edgcnt){
-	// O(e*log(e)) 根据题目给出的边构建出若干个闭合回路
-	vector<edg> eg;
-	map<vec,vector<int>> vec_idx;
-	vector<bool> vis;
-	// 输入边并进行存储
-	for(int i=1,dir; i<=edgcnt; ++i){
-		vec a=vec::get(),b=vec::get();
-		cin>>dir;
-		if(dir) std::swap(a,b);
-		if(a.x==b.x||a.y==b.y){
-			add_edg(eg,vec_idx,a,b);
-		}else{
-			vec c; // 把斜边拆分成横边和竖边
-			if(a.x<b.x&&a.y<b.y) c=(vec){a.x,b.y};
-			if(a.x>b.x&&a.y<b.y) c=(vec){b.x,a.y};
-			if(a.x>b.x&&a.y>b.y) c=(vec){a.x,b.y};
-			if(a.x<b.x&&a.y>b.y) c=(vec){b.x,a.y};
-			add_edg(eg,vec_idx,a,c);
-			add_edg(eg,vec_idx,c,b);
-		}
-	}
-	// 构建闭合回路
-	vis.resize(eg.size());
-	for(int i=0; i<(int)eg.size(); ++i){
-		if(vis[i]) continue;
-		clss.push_back(cls_s());
-		clss.rbegin()->push_back(eg[i]);
-		for(int id=i,cnt=0; cnt<1e5; ++cnt){ // 防止数据不合法？
-			int curdr=eg[id].dr(),res=id;
-			vis[id]=1;
-			for(int j:vec_idx[eg[id].b]){ // WIP
-				assert(eg[j].a==eg[id].b);
-				if(vis[j]&&j!=i) continue;
-				if(res==id||((curdr-eg[res].dr()+4)&3)<((curdr-eg[j].dr()+4)&3))
-					res=j;
+void replace_with(std::string &str,vector<char> repl,char p){
+	for(char c:repl)
+		std::replace(str.begin(),str.end(),c,p);
+}
+
+void get_cls(vector<cls_s> &clss){
+	// O(e) 输入边并进行存储
+	for(cls_s &cl:clss){
+		std::string str;
+		std::getline(cin,str);
+		replace_with(str,vector<char>{'[',']','(',')',','},' ');
+		std::istringstream is(str);
+		for(double x1,y1,x2,y2; is>>x1>>y1>>x2>>y2; ){
+			vec a=(vec){x1,y1},b=(vec){x2,y2};
+			if(x1==x2||y1==y2){
+				cl.push_back((edg){a,b});
+			}else{
+				vec c; // 把斜边拆分成横边和竖边
+				if(a.x<b.x&&a.y<b.y) c=(vec){a.x,b.y};
+				if(a.x>b.x&&a.y<b.y) c=(vec){b.x,a.y};
+				if(a.x>b.x&&a.y>b.y) c=(vec){a.x,b.y};
+				if(a.x<b.x&&a.y>b.y) c=(vec){b.x,a.y};
+				cl.push_back((edg){a,c});
+				cl.push_back((edg){c,b});
 			}
-			assert(res!=id);
-			if(res==i) break;
-			id=res;
-			clss.rbegin()->push_back(eg[id]);
 		}
 	}
 }
@@ -326,11 +311,11 @@ int main(){
 	drawer dw_ans("oput.png");
 	dw_ans.draw_grid();
 
-	int edgcnt,mdlcnt;
-	cin>>edgcnt>>mdlcnt;
-	vector<cls_s> org_cls;
+	int clcnt,mdlcnt;
+	cin>>clcnt>>mdlcnt;
+	vector<cls_s> org_cls(clcnt);
 	vector<mdl> org_mdl(mdlcnt);
-	get_cls(org_cls,edgcnt);
+	get_cls(org_cls);
 	for(int i=0; i<mdlcnt; ++i){
 		vec tgt=vec::get(),v=vec::get();
 		tgt=tgt+v*0.5;
