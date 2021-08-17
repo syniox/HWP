@@ -286,10 +286,10 @@ void topo_rand(std::vector<int> &idx,std::vector<std::vector<int>> mdl_nxt){
 		if(!have_ref[i]) que.push_back(i);
 	}
 	for(int i=0; i<n; ++i){
-		assert(!que.empty()); // 还未实现破换成链流程
-		int que_idx=rnd(0,que.size()),x=que[que_idx]; // 目前使用确定性随机化算法便于调试
+		assert(!que.empty()); // 还未实现破环成链流程
+		int que_idx=rnd(0,que.size()-1),x=que[que_idx]; // 目前使用确定性随机化算法便于调试
 		que.erase(que.begin()+que_idx);
-		for(int t:mdl_nxt[i]){
+		for(int t:mdl_nxt[x]){
 			que.push_back(t);
 		}
 		idx[i]=x;
@@ -341,7 +341,11 @@ int main(){
 		std::cin>>mdl_name[i];
 		vec v=vec::get(),tgt;
 		std::string str;
+		std::cin>>str;
 		if(str[0]=='('){
+			std::string str2;
+			getline(std::cin,str2);
+			str+=str2;
 			replace_with(str,std::vector<char>{'(',')',','},' ');
 			std::istringstream is(str);
 			double x,y;
