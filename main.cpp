@@ -4,16 +4,13 @@
 #include <algorithm>
 #include <cairo/cairo.h>
 #include <sstream>
+#include <cstdlib>
 #include <map>
 
 #include "types.h"
 #include "draw.h"
 
 static const double eps=1e-6;
-using std::cin; using std::cout; using std::cerr; using std::endl;
-using std::min; using std::max;
-using std::vector;
-using std::map;
 // x,y: 平面直角坐标系
 // n: 模块数 e: 边数 e(cl): 某个闭合回路的边数
 // 时间： O(e*log(e)) + O(n*e*e)
@@ -27,23 +24,20 @@ template <typename T> inline void apx(T &x,const T y){
 template <typename T> const T cabs(const T &x){
 	return x<0?-x:x;
 }
-
-void add_edg(vector<edg> &eg,map<vec,std::vector<int>> &vec_idx,vec a,vec b){
-	eg.push_back((edg){a,b});
-	vec_idx[a].push_back(eg.size()-1);
+inline int rnd(const int l,const int r){
+	return rand()%(r-l+1)+l;
 }
 
-void replace_with(std::string &str,vector<char> repl,char p){
-	for(char c:repl)
-		std::replace(str.begin(),str.end(),c,p);
+void replace_with(std::string &str,std::vector<char> repl,char p){
+	for(char c:repl) std::replace(str.begin(),str.end(),c,p);
 }
 
-void get_cls(vector<cls_s> &clss){
+void get_cls(std::vector<cls_s> &clss){
 	// O(e) 输入边并进行存储
 	for(cls_s &cl:clss){
 		std::string str;
-		std::getline(cin,str);
-		replace_with(str,vector<char>{'[',']','(',')',','},' ');
+		for(; !str.length(); getline(std::cin,str));
+		replace_with(str,std::vector<char>{'[',']','(',')',','},' ');
 		std::istringstream is(str);
 		for(double x1,y1,x2,y2; is>>x1>>y1>>x2>>y2; ){
 			vec a=(vec){x1,y1},b=(vec){x2,y2};
@@ -65,14 +59,14 @@ void get_cls(vector<cls_s> &clss){
 double get_dis(const vec &a,const vec &b){
 	return cabs(a.x-b.x)+cabs(a.y-b.y);
 }
-template <typename T> void flip_vec(vector <T> &vt){
+template <typename T> void flip_vec(std::vector <T> &vt){
 	for(T &x:vt) x.flip();
 }
 double get_overlap(double l1,double r1,double l2,double r2){
-	// (l1,r1)和(l2,r2)是否有相交的部分，inc(inclusive): 是否包含边界
+	// (l1,r1)和(l2,r2)交的部分的长度
 	if(l1>r1) std::swap(l1,r1);
 	if(l2>r2) std::swap(l2,r2);
-	return min(r1,r2)-max(l1,l2);
+	return std::min(r1,r2)-std::max(l1,l2);
 }
 bool on_line(const edg &e,const vec &p){
 	if(e.a.x==e.b.x) return cabs(p.x-e.a.x)<eps;
@@ -110,7 +104,7 @@ void update_gpos(mdl &gpos,double l,double r,const vec rct,const vec tgt,const d
 	}
 }
 
-mdl get_great_pos_cl(const cls_s &cl,const vector<edg> ebuk[4],const vec rct,const vec tgt,const bool fliped){
+mdl get_great_pos_cl(const cls_s &cl,const std::vector<edg> ebuk[4],const vec rct,const vec tgt,const bool fliped){
 	// O(e(cl)*e) 闭合回路cl的最优解
 	mdl gpos;
 	gpos.set_inf();
@@ -118,8 +112,8 @@ mdl get_great_pos_cl(const cls_s &cl,const vector<edg> ebuk[4],const vec rct,con
 	for(edg cur_e:cl){
 		if(cur_e.dr()&1) continue;
 		bool rvld=(cur_e.dr()==2)^fliped;
-		double pa=min(cur_e.a.x,cur_e.b.x),a=pa-rct.x+eps*2;
-		double pb=max(cur_e.a.x,cur_e.b.x),b=pb+rct.x-eps*2;
+		double pa=std::min(cur_e.a.x,cur_e.b.x),a=pa-rct.x+eps*2;
+		double pb=std::max(cur_e.a.x,cur_e.b.x),b=pb+rct.x-eps*2;
 		double line_y=cur_e.a.y+rct.y*(0.5-rvld);
 		double other_y=cur_e.a.y+(rvld?-rct.y:rct.y);
 		// 寻找两边可以最多向外延伸多少
@@ -138,7 +132,7 @@ mdl get_great_pos_cl(const cls_s &cl,const vector<edg> ebuk[4],const vec rct,con
 			if(cabs(e.a.y-line_y)*2>rct.y-eps&&cabs(e.a.y-cur_e.a.y)>eps) continue;
 			if(!cur_e.dr()) std::swap(e.a,e.b);
 			if(e.a.x>ed){
-				update_gpos(gpos,ed,min(e.a.x,b),rct,tgt,line_y);
+				update_gpos(gpos,ed,std::min(e.a.x,b),rct,tgt,line_y);
 			}
 			apx(ed,e.b.x);
 		}
@@ -147,15 +141,15 @@ mdl get_great_pos_cl(const cls_s &cl,const vector<edg> ebuk[4],const vec rct,con
 	return gpos;
 }
 
-mdl get_great_pos_basic(const vector<cls_s> &clss,int &best_cl,const vec rct,const vec tgt,const bool fliped){
+mdl get_great_pos_basic(const std::vector<cls_s> &clss,int &best_cl,const vec rct,const vec tgt,const bool fliped){
 	// O(e*e) 一个坐标系和模块方向的最优解（横向，坐标系是否经过变换）
-	vector<edg> ebuk[4];
+	std::vector<edg> ebuk[4];
 	for(cls_s cl:clss){
 		for(edg e:cl) ebuk[e.dr()].push_back(e);
 	}
 	for(int i=0; i<4; ++i){
 		std::sort(ebuk[i].begin(),ebuk[i].end(),
-				[](const edg &a,const edg &b){ return min(a.a.x,a.b.x)<min(b.a.x,b.b.x); });
+				[](const edg &a,const edg &b){ return std::min(a.a.x,a.b.x)<std::min(b.a.x,b.b.x); });
 	}
 	mdl gpos; // great pos
 	gpos.set_inf();
@@ -168,7 +162,7 @@ mdl get_great_pos_basic(const vector<cls_s> &clss,int &best_cl,const vec rct,con
 	return gpos;
 }
 
-mdl get_great_pos(vector<cls_s> &clss,int &best_cl,vec rct,vec tgt){
+mdl get_great_pos(std::vector<cls_s> &clss,int &best_cl,vec rct,vec tgt){
 	// O(e*e) 寻找模块摆放的最优位置
 	// 函数返回模块最后占用的位置
 	// TODO: 把排序函数从basic中提出来
@@ -250,7 +244,7 @@ void insert_mdl(cls_s &cl,mdl md){
 			apn(bk_x,md.v[i].x);
 		}
 		assert(st_x>=0&&ed_x>=0&&other_y>=0);
-		apx(bk_x,min(e.a.x,e.b.x));
+		apx(bk_x,std::min(e.a.x,e.b.x));
 		vec pb=vec{bk_x,e.a.y},p1=vec{st_x,e.a.y};
 		vec p2=vec{st_x,other_y},p3=vec{ed_x,other_y},p4=vec{ed_x,e.a.y};
 		it->b=pb;
@@ -266,7 +260,7 @@ void insert_mdl(cls_s &cl,mdl md){
 	assert(0);
 }
 
-double calc_res(vector<mdl> m1,vector<mdl> m2){
+double calc_res(std::vector<mdl> m1,std::vector<mdl> m2){
 	// O(n)  计算一组方案的连线长度和
 	if(m1.size()!=m2.size()) return 1e18;
 	int sz=m1.size();
@@ -278,9 +272,33 @@ double calc_res(vector<mdl> m1,vector<mdl> m2){
 	return res;
 }
 
-vector<mdl> solve_seq(vector<cls_s> clss,const vector<int> &seq,const vector<mdl> &mds){
+void topo_rand(std::vector<int> &idx,std::vector<std::vector<int>> mdl_nxt){
+	// O(n*n) 引入随机化的拓扑排序 TODO 优化时间复杂度
+	int n=idx.size();
+	assert(n==(int)mdl_nxt.size());
+	std::vector<bool> have_ref(n);
+	std::vector<int> que;
+	for(int i=0; i<n; ++i) have_ref[i]=0;
+	for(int i=0; i<n; ++i){
+		for(int t:mdl_nxt[i]) have_ref[t]=1;
+	}
+	for(int i=0; i<n; ++i){
+		if(!have_ref[i]) que.push_back(i);
+	}
+	for(int i=0; i<n; ++i){
+		assert(!que.empty()); // 还未实现破换成链流程
+		int que_idx=rnd(0,que.size()),x=que[que_idx]; // 目前使用确定性随机化算法便于调试
+		que.erase(que.begin()+que_idx);
+		for(int t:mdl_nxt[i]){
+			que.push_back(t);
+		}
+		idx[i]=x;
+	}
+}
+
+std::vector<mdl> solve_seq(std::vector<cls_s> clss,const std::vector<int> &seq,const std::vector<mdl> &mds){
 	// O(n*e*e) 对一个给定的模块摆放优先顺序做贪心最优解
-	vector<mdl> res(seq.size());
+	std::vector<mdl> res(seq.size());
 	for(int id:seq){
 		vec tgt=mds[id].cntr();
 		vec v=(vec){cabs(mds[id].v[0].x-mds[id].v[1].x),cabs(mds[id].v[0].y-mds[id].v[1].y)};
@@ -312,23 +330,36 @@ int main(){
 	dw_ans.draw_grid();
 
 	int clcnt,mdlcnt;
-	cin>>clcnt>>mdlcnt;
-	vector<cls_s> org_cls(clcnt);
-	vector<mdl> org_mdl(mdlcnt);
+	std::cin>>clcnt>>mdlcnt;
+	std::vector<cls_s> org_cls(clcnt);
+	std::vector<mdl> org_mdl(mdlcnt);
+	std::vector<std::string> mdl_name(mdlcnt);
+	std::vector<std::vector<int>> mdl_nxt(mdlcnt);
+	std::map<std::string,int> mdl_idx;
 	get_cls(org_cls);
 	for(int i=0; i<mdlcnt; ++i){
-		vec tgt=vec::get(),v=vec::get();
-		tgt=tgt+v*0.5;
-		org_mdl[i]=mdl::build(tgt,v);
+		std::cin>>mdl_name[i];
+		vec v=vec::get(),tgt;
+		std::string str;
+		if(str[0]=='('){
+			replace_with(str,std::vector<char>{'(',')',','},' ');
+			std::istringstream is(str);
+			double x,y;
+			is>>x>>y;
+			tgt=(vec){x,y};
+			org_mdl[i]=mdl::build(tgt,v);
+		}else{
+			int fa=mdl_idx[str];
+			mdl_nxt[fa].push_back(i);
+		}
 	}
-	vector<int> idx(mdlcnt);
-	for(int i=0; i<mdlcnt; ++i) idx[i]=i;
-	std::random_shuffle(idx.begin(),idx.end());
-	vector<mdl> res_mdl=solve_seq(org_cls,idx,org_mdl);
+	std::vector<int> idx(mdlcnt);
+	topo_rand(idx,mdl_nxt);
+	std::vector<mdl> res_mdl=solve_seq(org_cls,idx,org_mdl);
 	double res_len=calc_res(res_mdl,org_mdl);
 	for(int times=5; times--; ){
-		random_shuffle(idx.begin(),idx.end());
-		vector<mdl> cur_mdl=solve_seq(org_cls,idx,org_mdl);
+		topo_rand(idx,mdl_nxt);
+		std::vector<mdl> cur_mdl=solve_seq(org_cls,idx,org_mdl);
 		double cur_len=calc_res(cur_mdl,org_mdl);
 		if(res_len>cur_len){
 			res_len=cur_len;
@@ -338,13 +369,13 @@ int main(){
 	for(int i=0; i<mdlcnt; ++i){
 		if(res_mdl[i].v[0].x<0){
 			dw_ans.draw_mdl(org_mdl[i],col_blue,i+1);
-			cerr<<"Cannot put "<<i+1<<'.'<<endl;
+			std::cerr<<"Cannot put "<<i+1<<'.'<<std::endl;
 		}
 		dw_ans.draw_mdl(org_mdl[i],col_cyan,i+1);
-		cerr<<i+1<<": "<<res_mdl[i].v[0]<<' '<<res_mdl[i].v[1]<<endl;
+		std::cerr<<i+1<<": "<<res_mdl[i].v[0]<<' '<<res_mdl[i].v[1]<<std::endl;
 		dw_ans.draw_mdl(res_mdl[i],col_grey,i+1);
 	}
-	cerr<<"total length: "<<res_len<<endl;
+	std::cerr<<"total length: "<<res_len<<std::endl;
 	for(cls_s cl:org_cls){
 		dw_ans.draw_cl(cl);
 	}
