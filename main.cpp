@@ -326,6 +326,7 @@ int main(){
 	// 输出：
 	// 共m行，每行输出该模块摆放位置的对角端点
 
+	//drawer dw_ans("oput.png",600,60);
 	drawer dw_ans("oput.png");
 	dw_ans.draw_grid();
 

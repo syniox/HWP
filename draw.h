@@ -20,8 +20,8 @@ struct drawer{
 	~drawer();
 	void flush();
 	vec mat2sf(const vec &x)const; // 坐标系坐标转为图上坐标
-	void draw_line(vec x,vec y,col_s c=col_red,double width=1)const; // 画一条x到y的线段
-	void draw_grid(int interval=10)const; // 画出cr的参考坐标系
+	void draw_line(vec x,vec y,col_s c=col_red,double width=1,bool mat=1)const; // 画一条x到y的线段 是否是原图坐标
+	void draw_grid(int lcnt=10)const; // 画出cr的参考坐标系
 	void draw_mdl(mdl m,col_s c=col_grey,int id=-1)const; // 画出模块m
 	void draw_cl(const cls_s &cl)const; //画出该闭合回路（debug用）
 };
