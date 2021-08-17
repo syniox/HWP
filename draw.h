@@ -13,15 +13,17 @@ struct drawer{
 	cairo_surface_t *surface;
 	cairo_t *cr;
 	std::string oput_str; // 输出文件名
-	double d; // 画布边长
-	drawer(std::string str,double l=500);
+	double d_sf; // 画布边长
+	double d_mat; // 坐标系最大坐标
+	drawer(std::string str,double d_sf=6000,double d_mat=3000);
 	drawer(const drawer &d); // assert(0),防止意外传递
 	~drawer();
 	void flush();
-	void draw_line(vec x,vec y,col_s c=col_red,double width=1); // 画一条x到y的线段
-	void draw_grid(int interval=10); // 画出cr的参考坐标系
-	void draw_mdl(mdl m,col_s c=col_grey,int id=-1); // 画出模块m
-	void draw_cl(const cls_s &cl); //画出该闭合回路（debug用）
+	vec mat2sf(const vec &x)const; // 坐标系坐标转为图上坐标
+	void draw_line(vec x,vec y,col_s c=col_red,double width=1)const; // 画一条x到y的线段
+	void draw_grid(int interval=10)const; // 画出cr的参考坐标系
+	void draw_mdl(mdl m,col_s c=col_grey,int id=-1)const; // 画出模块m
+	void draw_cl(const cls_s &cl)const; //画出该闭合回路（debug用）
 };
 
 void dbg_cl(const cls_s &cl); // 在dbg.png上画出这个闭合回路cl的形状和位置
