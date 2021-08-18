@@ -22,7 +22,11 @@ drawer::drawer(std::string str,double d_sf){
 	surface=cairo_image_surface_create(CAIRO_FORMAT_ARGB32,d_sf,d_sf);
 	cr=cairo_create(surface);
 }
-drawer::drawer(const drawer &d){assert(0);} // 防止意外传递
+drawer::drawer(const drawer &d){
+	std::cerr<<"warning: copying drawer "<<d.oput_str<<'.'<<std::endl;
+	x_low=d.x_low,x_up=d.x_up;
+	y_low=d.y_low,y_up=d.y_up;
+}
 drawer::~drawer(){
 	cairo_surface_destroy(surface);
 }
@@ -46,7 +50,7 @@ void drawer::draw_line(vec x,vec y,col_s c,double width,bool mat,double rect)con
 	// 画一条x到y的线段，mat表示输入是否为电路板上的坐标（而不是画布位置）
 	// 在向量指向的那一段做一个正方形
 	if(mat) x=mat2sf(x),y=mat2sf(y);
-	std::cerr<<"draw: "<<x<<"->"<<y<<"(sf: "<<d_sf<<")"<<std::endl;
+	//std::cerr<<"draw: "<<x<<"->"<<y<<"(sf: "<<d_sf<<")"<<std::endl;
 	assert(in_grid(x,d_sf)&&in_grid(y,d_sf));
 	cairo_set_source_rgba(cr,c.r,c.g,c.b,1.0);
 	cairo_set_line_width(cr,width);
@@ -90,9 +94,10 @@ void drawer::draw_cl(const cls_s &cl)const{
 	for(edg e:cl) draw_line(e.a,e.b,col_red,1,1,0);
 }
 
-void dbg_cl(const cls_s &cl){
+void dbg_cl(const cls_s &cl,const drawer &dw_ans){
 	// 在dbg.png上画出这个闭合回路cl的形状和位置 BUG: 未设置最高最低值
-	drawer dbg("dbg.png");
+	drawer dbg(dw_ans);
+	dbg.oput_str="dbg.png";
 	dbg.draw_grid();
 	dbg.draw_cl(cl);
 	dbg.flush();

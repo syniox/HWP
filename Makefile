@@ -7,7 +7,7 @@ all: main data
 main: main.o types.o draw.o utils.o
 	g++ $(CXXFLAGS) -o main $^ -lcairo
 
-main.o: types.h draw.h
+main.o: types.h draw.h utils.h
 types.o: types.h
 draw.o: draw.h types.h utils.h
 

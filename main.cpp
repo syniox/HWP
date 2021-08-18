@@ -217,7 +217,7 @@ void insert_mdl(cls_s &cl,mdl md){
 			md.flip();
 		}
 		// 寻找切分点和模块的另一边的位置
-		double bk_x=1e9,st_x=-1,ed_x=-1,other_y=-1; // 断点，另一个y
+		double bk_x=1e9,st_x=1e9,ed_x=1e9,other_y=1e9; // 断点，另一个y
 		for(int i=0; i<2; ++i){
 			if(cabs(md.v[i].y-e.a.y)>eps){
 				other_y=md.v[i].y;
@@ -228,7 +228,7 @@ void insert_mdl(cls_s &cl,mdl md){
 			}
 			apn(bk_x,md.v[i].x);
 		}
-		assert(st_x>=0&&ed_x>=0&&other_y>=0);
+		assert(st_x!=1e9&&ed_x!=1e9&&other_y!=1e9);
 		apx(bk_x,std::min(e.a.x,e.b.x));
 		vec pb=vec{bk_x,e.a.y},p1=vec{st_x,e.a.y};
 		vec p2=vec{st_x,other_y},p3=vec{ed_x,other_y},p4=vec{ed_x,e.a.y};
@@ -257,18 +257,15 @@ double calc_res(std::vector<mdl> m1,std::vector<mdl> m2){
 	return res;
 }
 
-void topo_rand(std::vector<int> &idx,std::vector<std::vector<int>> mdl_nxt){
+void topo_rand(std::vector<int> &idx,std::vector<int> &mdl_ref){
 	// O(n*n) 引入随机化的拓扑排序 TODO 优化时间复杂度
 	int n=idx.size();
-	assert(n==(int)mdl_nxt.size());
-	std::vector<bool> have_ref(n);
+	assert(n==(int)mdl_ref.size());
+	std::vector<std::vector<int>> mdl_nxt(n);
 	std::vector<int> que;
-	for(int i=0; i<n; ++i) have_ref[i]=0;
 	for(int i=0; i<n; ++i){
-		for(int t:mdl_nxt[i]) have_ref[t]=1;
-	}
-	for(int i=0; i<n; ++i){
-		if(!have_ref[i]) que.push_back(i);
+		if(mdl_ref[i]==-1) que.push_back(i);
+		else mdl_nxt[mdl_ref[i]].push_back(i);
 	}
 	for(int i=0; i<n; ++i){
 		assert(!que.empty()); // 还未实现破环成链流程
@@ -281,12 +278,18 @@ void topo_rand(std::vector<int> &idx,std::vector<std::vector<int>> mdl_nxt){
 	}
 }
 
-std::vector<mdl> solve_seq(std::vector<cls_s> clss,const std::vector<int> &seq,const std::vector<mdl> &mds){
+std::vector<mdl> solve_seq(std::vector<cls_s> clss,const std::vector<int> &seq,const std::vector<mdl> &mds,const std::vector<int> &mdl_ref){
 	// O(n*e*e) 对一个给定的模块摆放优先顺序做贪心最优解
 	std::vector<mdl> res(seq.size());
 	for(int id:seq){
-		vec tgt=mds[id].cntr();
-		vec v=(vec){cabs(mds[id].v[0].x-mds[id].v[1].x),cabs(mds[id].v[0].y-mds[id].v[1].y)};
+		vec v,tgt;
+		if(mdl_ref[id]==-1){
+			tgt=mds[id].cntr();
+			v=(vec){cabs(mds[id].v[0].x-mds[id].v[1].x),cabs(mds[id].v[0].y-mds[id].v[1].y)};
+		}else{
+			tgt=res[mdl_ref[id]].cntr();
+			v=mds[id].v[0];
+		}
 		int best_cl=0;
 		mdl mpos=get_great_pos(clss,best_cl,v,tgt);
 		if(get_dis(mpos.cntr(),tgt)>1e12){
@@ -319,7 +322,7 @@ int main(){
 	std::vector<cls_s> org_cls(clcnt);
 	std::vector<mdl> org_mdl(mdlcnt);
 	std::vector<std::string> mdl_name(mdlcnt);
-	std::vector<std::vector<int>> mdl_nxt(mdlcnt);
+	std::vector<int> mdl_ref(mdlcnt,-1);
 	std::map<std::string,int> mdl_idx;
 	get_cls(org_cls,dw_ans);
 	for(int i=0; i<mdlcnt; ++i){
@@ -338,24 +341,23 @@ int main(){
 			tgt=(vec){x,y};
 			org_mdl[i]=mdl::build(tgt,v);
 		}else{
-			int fa=mdl_idx[str];
-			mdl_nxt[fa].push_back(i);
+			mdl_ref[i]=mdl_idx[str];
+			org_mdl[i]=(mdl){{v,vec()}};
 		}
 	}
 	std::vector<int> idx(mdlcnt);
-	topo_rand(idx,mdl_nxt);
-	std::vector<mdl> res_mdl=solve_seq(org_cls,idx,org_mdl);
+	topo_rand(idx,mdl_ref);
+	std::vector<mdl> res_mdl=solve_seq(org_cls,idx,org_mdl,mdl_ref);
 	double res_len=calc_res(res_mdl,org_mdl);
 	for(int times=5; times--; ){
-		topo_rand(idx,mdl_nxt);
-		std::vector<mdl> cur_mdl=solve_seq(org_cls,idx,org_mdl);
+		topo_rand(idx,mdl_ref);
+		std::vector<mdl> cur_mdl=solve_seq(org_cls,idx,org_mdl,mdl_ref);
 		double cur_len=calc_res(cur_mdl,org_mdl);
 		if(res_len>cur_len){
 			res_len=cur_len;
 			res_mdl.swap(cur_mdl);
 		}
 	}
-	std::cerr<<dw_ans.x_low<<' '<<dw_ans.x_up<<' '<<dw_ans.y_low<<' '<<dw_ans.y_up<<std::endl;
 	dw_ans.zoom_out();
 	dw_ans.draw_grid();
 	for(int i=0; i<mdlcnt; ++i){

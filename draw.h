@@ -30,4 +30,4 @@ struct drawer{
 	void draw_cl(const cls_s &cl)const; //画出该闭合回路（debug用）
 };
 
-void dbg_cl(const cls_s &cl); // 在dbg.png上画出这个闭合回路cl的形状和位置
+void dbg_cl(const cls_s &cl,const drawer &dw_ans); // 在dbg.png上画出这个闭合回路cl的形状和位置
