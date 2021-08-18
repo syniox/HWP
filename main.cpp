@@ -16,6 +16,30 @@ static const double eps=1e-6;
 // n: 模块数 e: 边数 e(cl): 某个闭合回路的边数
 // 时间： O(e*log(e)) + O(n*e*e)
 
+void sanitize_vec(cls_s &cl){
+	//O(e(cl)*e(cl)) 删除长度为0的边，合并相邻且方向相反的边
+	// TODO: optimize
+	for(int cnt=-1; cnt; ){
+		cnt=0;
+		for(int i=cl.size()-1; i>=0; --i){
+			if(cl[i].ispnt()){
+				++cnt;
+				cl.erase(cl.begin()+i);
+			}
+		}
+		for(int i=0; i<(int)cl.size(); ++i){
+			int a=i,b=(i+1)%cl.size();
+			if(((cl[a].dr()^cl[b].dr())&1)==0){
+				++cnt;
+				assert(cl[a].b==cl[b].a);
+				cl[a].b=cl[b].b;
+				cl.erase(cl.begin()+b);
+				break;
+			}
+		}
+	}
+}
+
 void get_cls(std::vector<cls_s> &clss,drawer &dw_ans){
 	// O(e) 输入边并进行存储
 	for(cls_s &cl:clss){
@@ -38,6 +62,7 @@ void get_cls(std::vector<cls_s> &clss,drawer &dw_ans){
 				cl.push_back((edg){c,b});
 			}
 		}
+		sanitize_vec(cl);
 	}
 }
 
@@ -174,30 +199,6 @@ mdl get_great_pos(std::vector<cls_s> &clss,int &best_cl,vec rct,vec tgt){
 		if(tmp<res) res=tmp,pos=mpos[i],best_cl=bcl[i];
 	}
 	return pos;
-}
-
-void sanitize_vec(cls_s &cl){
-	//O(e(cl)*e(cl)) 删除长度为0的边，合并相邻且方向相反的边
-	// TODO: optimize
-	for(int cnt=-1; cnt; ){
-		cnt=0;
-		for(int i=cl.size()-1; i>=0; --i){
-			if(cl[i].ispnt()){
-				++cnt;
-				cl.erase(cl.begin()+i);
-			}
-		}
-		for(int i=0; i<(int)cl.size(); ++i){
-			int a=i,b=(i+1)%cl.size();
-			if(((cl[a].dr()^cl[b].dr())&1)==0){
-				++cnt;
-				assert(cl[a].b==cl[b].a);
-				cl[a].b=cl[b].b;
-				cl.erase(cl.begin()+b);
-				break;
-			}
-		}
-	}
 }
 
 void insert_mdl(cls_s &cl,mdl md){

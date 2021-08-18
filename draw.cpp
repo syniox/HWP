@@ -1,6 +1,7 @@
 #include <cairo/cairo.h>
 #include <cstdio>
 #include <cassert>
+#include <cmath>
 
 #include "draw.h"
 #include "types.h"
@@ -42,23 +43,30 @@ void drawer::zoom_out(const double scale){
 	y_low-=scale,y_up+=scale;
 }
 vec drawer::mat2sf(const vec &a)const{
-	double x_pec=(a.x-x_low)/(x_up-x_low);
-	double y_pec=(a.y-y_low)/(y_up-y_low);
+	double dmax=std::max((x_up-x_low),(y_up-y_low));
+	double x_pec=(a.x-x_low)/dmax;
+	double y_pec=1-(a.y-y_low)/dmax;
 	return (vec){x_pec*d_sf,y_pec*d_sf};
 }
-void drawer::draw_line(vec x,vec y,col_s c,double width,bool mat,double rect)const{
+void drawer::draw_line(vec x,vec y,col_s c,double width,bool mat,double rad)const{
 	// 画一条x到y的线段，mat表示输入是否为电路板上的坐标（而不是画布位置）
 	// 在向量指向的那一段做一个正方形
 	if(mat) x=mat2sf(x),y=mat2sf(y);
 	//std::cerr<<"draw: "<<x<<"->"<<y<<"(sf: "<<d_sf<<")"<<std::endl;
 	assert(in_grid(x,d_sf)&&in_grid(y,d_sf));
-	cairo_set_source_rgba(cr,c.r,c.g,c.b,1.0);
+	cairo_set_source_rgba(cr,c.r,c.g,c.b,0.6);
 	cairo_set_line_width(cr,width);
 	cairo_move_to(cr,x.x,x.y);
 	cairo_line_to(cr,y.x,y.y);
 	cairo_stroke(cr);
-	cairo_rectangle(cr,y.x-rect,y.y-rect,rect*2,rect*2);
-	cairo_fill(cr);
+	if(cabs(rad)<1e-6) return;
+	vec vt=y-x;
+	vt=vt*(rad/sqrt(vt.x*vt.x+vt.y*vt.y));
+	vec vl{-vt.y,vt.x},vr{vt.y,-vt.x};
+	vec start=y-vt+vl,end=y-vt+vr;
+	cairo_move_to(cr,start.x,start.y);
+	cairo_curve_to(cr,start.x,start.y,y.x,y.y,end.x,end.y);
+	cairo_stroke(cr);
 }
 void drawer::draw_grid(int lcnt)const{
 	// 画出cr的参考坐标系
@@ -72,7 +80,7 @@ void drawer::draw_grid(int lcnt)const{
 void drawer::draw_mdl(mdl m,col_s c,int id)const{
 	// 画出模块m
 	static char ch[10];
-	cairo_set_source_rgba(cr,c.r,c.g,c.b,1.0);
+	cairo_set_source_rgba(cr,c.r,c.g,c.b,0.6);
 	m.v[0]=mat2sf(m.v[0]),m.v[1]=mat2sf(m.v[1]);
 	double x=m.v[0].x,y=m.v[0].y,dx=m.v[1].x-x,dy=m.v[1].y-y;
 	if(dx<0) dx=-dx,x-=dx;
@@ -85,20 +93,26 @@ void drawer::draw_mdl(mdl m,col_s c,int id)const{
 	draw_line(vec{x,y+dy},vec{x+dx,y+dy},col_green,1,0);
 	if(id==-1) return;
 	sprintf(ch,"%d",id);
-	cairo_set_source_rgba(cr,1,1,1,1);
+	cairo_set_source_rgba(cr,1,1,1,0.6);
 	cairo_set_font_size(cr,12);
 	cairo_move_to(cr,x+dx/2,y+dy/2);
 	cairo_show_text(cr,ch);
 }
 void drawer::draw_cl(const cls_s &cl)const{
-	for(edg e:cl) draw_line(e.a,e.b,col_red,1,1,0);
+	for(edg e:cl) draw_line(e.a,e.b,col_red,1,1,6);
 }
 
-void dbg_cl(const cls_s &cl,const drawer &dw_ans){
-	// 在dbg.png上画出这个闭合回路cl的形状和位置 BUG: 未设置最高最低值
-	drawer dbg(dw_ans);
-	dbg.oput_str="dbg.png";
-	dbg.draw_grid();
+void dbg_cl(const cls_s &cl,std::initializer_list<mdl> mds={}){
+	// 在dbg.png上画出这个闭合回路cl的形状和位置 包括一些模块
+	drawer dbg("dbg.png");
+	for(edg e:cl){
+		dbg.upd(e.a),dbg.upd(e.b);
+	}
+	for(mdl m:mds){
+		dbg.upd(m.v[0]),dbg.upd(m.v[1]);
+	}
+	dbg.zoom_out();
 	dbg.draw_cl(cl);
+	for(mdl m:mds) dbg.draw_mdl(m);
 	dbg.flush();
 }
