@@ -2,8 +2,9 @@
 #include <cstdio>
 #include <cassert>
 
-#include "types.h"
 #include "draw.h"
+#include "types.h"
+#include "utils.h"
 
 
 //helper
@@ -14,10 +15,10 @@ bool in_grid(vec x,double limit){
 
 //main
 
-drawer::drawer(std::string str,double d_sf,double d_mat){
+drawer::drawer(std::string str,double d_sf){
+	x_low=y_low=1e12;
 	oput_str=str;
 	this->d_sf=d_sf;
-	this->d_mat=d_mat;
 	surface=cairo_image_surface_create(CAIRO_FORMAT_ARGB32,d_sf,d_sf);
 	cr=cairo_create(surface);
 }
@@ -28,12 +29,22 @@ drawer::~drawer(){
 void drawer::flush(){
 	cairo_surface_write_to_png(surface,oput_str.data());
 }
-vec drawer::mat2sf(const vec &a)const{
-	return (vec){a.x/d_mat*d_sf/2+d_sf/2,a.y/d_mat*d_sf/2+d_sf/2};
+void drawer::upd(const vec &a){
+	apn(x_low,a.x),apx(x_up,a.x);
+	apn(y_low,a.y),apx(y_up,a.y);
 }
-void drawer::draw_line(vec x,vec y,col_s c,double width,bool mat)const{
+void drawer::zoom_out(const double scale){
+	x_low-=scale,x_up+=scale;
+	y_low-=scale,y_up+=scale;
+}
+vec drawer::mat2sf(const vec &a)const{
+	double x_pec=(a.x-x_low)/(x_up-x_low);
+	double y_pec=(a.y-y_low)/(y_up-y_low);
+	return (vec){x_pec*d_sf,y_pec*d_sf};
+}
+void drawer::draw_line(vec x,vec y,col_s c,double width,bool mat,double rect)const{
 	// 画一条x到y的线段，mat表示输入是否为电路板上的坐标（而不是画布位置）
-	std::cerr<<"draw(org): "<<x<<"->"<<y<<std::endl;
+	// 在向量指向的那一段做一个正方形
 	if(mat) x=mat2sf(x),y=mat2sf(y);
 	std::cerr<<"draw: "<<x<<"->"<<y<<"(sf: "<<d_sf<<")"<<std::endl;
 	assert(in_grid(x,d_sf)&&in_grid(y,d_sf));
@@ -42,6 +53,8 @@ void drawer::draw_line(vec x,vec y,col_s c,double width,bool mat)const{
 	cairo_move_to(cr,x.x,x.y);
 	cairo_line_to(cr,y.x,y.y);
 	cairo_stroke(cr);
+	cairo_rectangle(cr,y.x-rect,y.y-rect,rect*2,rect*2);
+	cairo_fill(cr);
 }
 void drawer::draw_grid(int lcnt)const{
 	// 画出cr的参考坐标系
@@ -74,12 +87,12 @@ void drawer::draw_mdl(mdl m,col_s c,int id)const{
 	cairo_show_text(cr,ch);
 }
 void drawer::draw_cl(const cls_s &cl)const{
-	for(edg e:cl) draw_line(e.a,e.b);
+	for(edg e:cl) draw_line(e.a,e.b,col_red,1,1,0);
 }
 
 void dbg_cl(const cls_s &cl){
-	// 在dbg.png上画出这个闭合回路cl的形状和位置
-	drawer dbg("dbg.png",600,60);
+	// 在dbg.png上画出这个闭合回路cl的形状和位置 BUG: 未设置最高最低值
+	drawer dbg("dbg.png");
 	dbg.draw_grid();
 	dbg.draw_cl(cl);
 	dbg.flush();

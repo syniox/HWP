@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <map>
 
+#include "utils.h"
 #include "types.h"
 #include "draw.h"
 
@@ -15,24 +16,7 @@ static const double eps=1e-6;
 // n: 模块数 e: 边数 e(cl): 某个闭合回路的边数
 // 时间： O(e*log(e)) + O(n*e*e)
 
-template <typename T> inline void apn(T &x,const T y){
-	x=x<=y?x:y;
-}
-template <typename T> inline void apx(T &x,const T y){
-	x=x>=y?x:y;
-}
-template <typename T> const T cabs(const T &x){
-	return x<0?-x:x;
-}
-inline int rnd(const int l,const int r){
-	return rand()%(r-l+1)+l;
-}
-
-void replace_with(std::string &str,std::vector<char> repl,char p){
-	for(char c:repl) std::replace(str.begin(),str.end(),c,p);
-}
-
-void get_cls(std::vector<cls_s> &clss){
+void get_cls(std::vector<cls_s> &clss,drawer &dw_ans){
 	// O(e) 输入边并进行存储
 	for(cls_s &cl:clss){
 		std::string str;
@@ -41,6 +25,7 @@ void get_cls(std::vector<cls_s> &clss){
 		std::istringstream is(str);
 		for(double x1,y1,x2,y2; is>>x1>>y1>>x2>>y2; ){
 			vec a=(vec){x1,y1},b=(vec){x2,y2};
+			dw_ans.upd(a),dw_ans.upd(b);
 			if(x1==x2||y1==y2){
 				cl.push_back((edg){a,b});
 			}else{
@@ -328,7 +313,6 @@ int main(){
 
 	//drawer dw_ans("oput.png",600,60);
 	drawer dw_ans("oput.png");
-	dw_ans.draw_grid();
 
 	int clcnt,mdlcnt;
 	std::cin>>clcnt>>mdlcnt;
@@ -337,7 +321,7 @@ int main(){
 	std::vector<std::string> mdl_name(mdlcnt);
 	std::vector<std::vector<int>> mdl_nxt(mdlcnt);
 	std::map<std::string,int> mdl_idx;
-	get_cls(org_cls);
+	get_cls(org_cls,dw_ans);
 	for(int i=0; i<mdlcnt; ++i){
 		std::cin>>mdl_name[i];
 		vec v=vec::get(),tgt;
@@ -371,6 +355,9 @@ int main(){
 			res_mdl.swap(cur_mdl);
 		}
 	}
+	std::cerr<<dw_ans.x_low<<' '<<dw_ans.x_up<<' '<<dw_ans.y_low<<' '<<dw_ans.y_up<<std::endl;
+	dw_ans.zoom_out();
+	dw_ans.draw_grid();
 	for(int i=0; i<mdlcnt; ++i){
 		if(res_mdl[i].v[0].x<0){
 			dw_ans.draw_mdl(org_mdl[i],col_blue,i+1);
