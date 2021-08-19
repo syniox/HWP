@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <cassert>
+#include <cmath>
 // x,y: 平面直角坐标系
 
 vec vec::get(){
@@ -12,6 +13,9 @@ vec vec::get(){
 }
 void vec::flip(){
 	std::swap(x,y);
+}
+vec vec::norm(const double l){
+	return *this=*this*(l/sqrt(x*x+y*y));
 }
 template <typename T>
 vec operator * (const vec &v,const T x){

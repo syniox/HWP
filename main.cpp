@@ -15,6 +15,8 @@
 // n: 模块数 e: 边数 e(cl): 某个闭合回路的边数
 // 时间： O(e*log(e)) + O(n*e*e)
 
+//TODO 用list代替vector
+
 void sanitize_vec(cls_s &cl){
 	//O(e(cl)*e(cl)) 删除长度为0的边，合并相邻且方向相反的边
 	// TODO: optimize
@@ -39,7 +41,7 @@ void sanitize_vec(cls_s &cl){
 	}
 }
 
-void get_cls(std::vector<cls_s> &clss,drawer &dw_ans){
+void get_cls(std::vector<cls_s> &clss,drawer &dw_ans,double thr=4){
 	// O(e) 输入边并进行存储
 	for(cls_s &cl:clss){
 		std::string str;
@@ -251,13 +253,15 @@ void insert_mdl(cls_s &cl,mdl md){
 	assert(0);
 }
 
-double calc_res(std::vector<mdl> m1,std::vector<mdl> m2){
+double calc_res(std::vector<mdl> m_res,std::vector<mdl> m_org,std::vector<int> ref){
 	// O(n)  计算一组方案的连线长度和
-	if(m1.size()!=m2.size()) return inf;
-	int sz=m1.size();
+	if(m_res.size()!=m_org.size()) return inf;
+	int sz=m_res.size();
 	double res=0;
 	for(int i=0; i<sz; ++i){
-		vec v=m1[i].cntr()-m2[i].cntr();
+		vec v;
+		if(ref[i]==-1) v=m_res[i].cntr()-m_org[i].cntr();
+		else v=m_res[i].cntr()-m_res[ref[i]].cntr();
 		res+=cabs(v.x)+cabs(v.y);
 	}
 	return res;
@@ -282,6 +286,11 @@ void topo_rand(std::vector<int> &idx,std::vector<int> &mdl_ref){
 		}
 		idx[i]=x;
 	}
+	std::cerr<<"rand result: ";
+	for(int i:idx){
+		std::cerr<<i<<' ';
+	}
+	std::cerr<<std::endl;
 }
 
 std::vector<mdl> solve_seq(std::vector<cls_s> clss,const std::vector<int> &seq,const std::vector<mdl> &mds,const std::vector<int> &mdl_ref){
@@ -356,12 +365,13 @@ int main(){
 	std::vector<int> idx(mdlcnt);
 	topo_rand(idx,mdl_ref);
 	std::vector<mdl> res_mdl=solve_seq(org_cls,idx,org_mdl,mdl_ref);
-	double res_len=calc_res(res_mdl,org_mdl);
+	double res_len=calc_res(res_mdl,org_mdl,mdl_ref);
 	for(int times=5; times--; ){
 		topo_rand(idx,mdl_ref);
 		std::vector<mdl> cur_mdl=solve_seq(org_cls,idx,org_mdl,mdl_ref);
-		double cur_len=calc_res(cur_mdl,org_mdl);
+		double cur_len=calc_res(cur_mdl,org_mdl,mdl_ref);
 		if(res_len>cur_len){
+			std::cerr<<"better."<<std::endl;
 			res_len=cur_len;
 			res_mdl.swap(cur_mdl);
 		}
@@ -374,7 +384,7 @@ int main(){
 			std::cerr<<"Cannot put "<<i+1<<'.'<<std::endl;
 		}
 		if(mdl_ref[i]==-1) dw_ans.draw_mdl(org_mdl[i],col_cyan,mdl_name[i]);
-		std::cerr<<i+1<<": "<<mdl_name[i]<<','<<res_mdl[i].v[0]<<' '<<res_mdl[i].v[1]<<std::endl;
+		std::cerr<<i<<": "<<mdl_name[i]<<','<<res_mdl[i].v[0]<<' '<<res_mdl[i].v[1]<<std::endl;
 		dw_ans.draw_mdl(res_mdl[i],col_grey,mdl_name[i]);
 	}
 	//std::cerr<<"edge:"<<dw_ans.sf2mat((vec){0,0})<<dw_ans.sf2mat((vec){dw_ans.d_sf,dw_ans.d_sf})<<std::endl;

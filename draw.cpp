@@ -66,8 +66,7 @@ void drawer::draw_line(vec x,vec y,col_s c,double width,bool mat,double rad)cons
 	cairo_line_to(cr,y.x,y.y);
 	cairo_stroke(cr);
 	if(cabs(rad)<eps) return;
-	vec vt=y-x;
-	vt=vt*(rad/sqrt(vt.x*vt.x+vt.y*vt.y));
+	vec vt=(y-x).norm(rad);
 	vec vl{-vt.y,vt.x},vr{vt.y,-vt.x};
 	vec start=y-vt+vl,end=y-vt+vr;
 	cairo_move_to(cr,start.x,start.y);
