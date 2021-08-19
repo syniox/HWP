@@ -370,12 +370,12 @@ int main(){
 	dw_ans.draw_grid();
 	for(int i=0; i<mdlcnt; ++i){
 		if(res_mdl[i].v[0].x<=-inf){
-			if(mdl_ref[i]==-1) dw_ans.draw_mdl(org_mdl[i],col_blue,i+1);
+			if(mdl_ref[i]==-1) dw_ans.draw_mdl(org_mdl[i],col_blue,mdl_name[i]);
 			std::cerr<<"Cannot put "<<i+1<<'.'<<std::endl;
 		}
-		if(mdl_ref[i]==-1) dw_ans.draw_mdl(org_mdl[i],col_cyan,i+1);
-		std::cerr<<i+1<<": "<<res_mdl[i].v[0]<<' '<<res_mdl[i].v[1]<<std::endl;
-		dw_ans.draw_mdl(res_mdl[i],col_grey,i+1);
+		if(mdl_ref[i]==-1) dw_ans.draw_mdl(org_mdl[i],col_cyan,mdl_name[i]);
+		std::cerr<<i+1<<": "<<mdl_name[i]<<','<<res_mdl[i].v[0]<<' '<<res_mdl[i].v[1]<<std::endl;
+		dw_ans.draw_mdl(res_mdl[i],col_grey,mdl_name[i]);
 	}
 	//std::cerr<<"edge:"<<dw_ans.sf2mat((vec){0,0})<<dw_ans.sf2mat((vec){dw_ans.d_sf,dw_ans.d_sf})<<std::endl;
 	std::cerr<<"total length: "<<res_len<<std::endl;

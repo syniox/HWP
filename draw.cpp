@@ -11,13 +11,13 @@
 //helper
 
 bool in_grid(vec x,double limit){
-	return x.x>-limit-1e-6&&x.x<limit+1e-6&&x.y>-limit-1e-6&&x.y<limit+1e-6;
+	return x.x>-limit-eps&&x.x<limit+eps&&x.y>-limit-eps&&x.y<limit+eps;
 }
 
 //main
 
 drawer::drawer(std::string str,double d_sf){
-	x_low=y_low=1e12,x_up=y_up=-1e12;
+	x_low=y_low=inf,x_up=y_up=-inf;
 	oput_str=str;
 	this->d_sf=d_sf;
 	surface=cairo_image_surface_create(CAIRO_FORMAT_ARGB32,d_sf,d_sf);
@@ -65,7 +65,7 @@ void drawer::draw_line(vec x,vec y,col_s c,double width,bool mat,double rad)cons
 	cairo_move_to(cr,x.x,x.y);
 	cairo_line_to(cr,y.x,y.y);
 	cairo_stroke(cr);
-	if(cabs(rad)<1e-6) return;
+	if(cabs(rad)<eps) return;
 	vec vt=y-x;
 	vt=vt*(rad/sqrt(vt.x*vt.x+vt.y*vt.y));
 	vec vl{-vt.y,vt.x},vr{vt.y,-vt.x};
@@ -77,15 +77,14 @@ void drawer::draw_line(vec x,vec y,col_s c,double width,bool mat,double rad)cons
 void drawer::draw_grid(int lcnt)const{
 	// 画出cr的参考坐标系
 	double interval=d_sf/lcnt;
-	for(int i=0; i<=d_sf+1e-6; i+=interval){
+	for(int i=0; i<=d_sf+eps; i+=interval){
 		double p=i;
 		draw_line((vec){0.0,p},(vec){d_sf,p},col_white,0.8,0);
 		draw_line((vec){p,0.0},(vec){p,d_sf},col_white,0.8,0);
 	}
 }
-void drawer::draw_mdl(mdl m,col_s c,int id)const{
+void drawer::draw_mdl(mdl m,col_s c,std::string id)const{
 	// 画出模块m
-	static char ch[10];
 	cairo_set_source_rgba(cr,c.r,c.g,c.b,0.6);
 	m.v[0]=mat2sf(m.v[0]),m.v[1]=mat2sf(m.v[1]);
 	double x=m.v[0].x,y=m.v[0].y,dx=m.v[1].x-x,dy=m.v[1].y-y;
@@ -97,12 +96,11 @@ void drawer::draw_mdl(mdl m,col_s c,int id)const{
 	draw_line(vec{x,y},vec{x,y+dy},col_green,1,0);
 	draw_line(vec{x+dx,y},vec{x+dx,y+dy},col_green,1,0);
 	draw_line(vec{x,y+dy},vec{x+dx,y+dy},col_green,1,0);
-	if(id==-1) return;
-	sprintf(ch,"%d",id);
+	if(!id.length()) return;
 	cairo_set_source_rgba(cr,1,1,1,0.6);
 	cairo_set_font_size(cr,12);
 	cairo_move_to(cr,x+dx/2,y+dy/2);
-	cairo_show_text(cr,ch);
+	cairo_show_text(cr,id.c_str());
 }
 void drawer::draw_cl(const cls_s &cl)const{
 	for(edg e:cl) draw_line(e.a,e.b,col_red,1,1,6);
