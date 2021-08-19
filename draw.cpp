@@ -101,8 +101,8 @@ void drawer::draw_mdl(mdl m,col_s c,std::string id)const{
 	cairo_move_to(cr,x+dx/2,y+dy/2);
 	cairo_show_text(cr,id.c_str());
 }
-void drawer::draw_cl(const cls_s &cl)const{
-	for(edg e:cl) draw_line(e.a,e.b,col_red,1,1,6);
+void drawer::draw_cl(const cls_s &cl,const double rad)const{
+	for(edg e:cl) draw_line(e.a,e.b,col_red,1,1,rad);
 }
 
 void dbg_cl(const cls_s &cl,std::initializer_list<mdl> mds){

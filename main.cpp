@@ -42,8 +42,6 @@ void sanitize_vec(cls_s &cl){
 }
 
 void add_bevel(cls_s &cl,const vec a,const vec b){
-	assert(a.x>10&&a.y>10); // debug
-	assert(b.x>10&&b.y>10); // debug
 	vec c; // 把斜边拆分成横边和竖边
 	if(a.x<b.x&&a.y<b.y) c=(vec){a.x,b.y};
 	else if(a.x>b.x&&a.y<b.y) c=(vec){b.x,a.y};
@@ -54,9 +52,10 @@ void add_bevel(cls_s &cl,const vec a,const vec b){
 	cl.push_back((edg){c,b});
 }
 
-void get_cls(std::vector<cls_s> &clss,drawer &dw_ans,double thr=4){
+void get_cls(std::vector<cls_s> &clss,std::vector<cls_s> &input,drawer &dw_ans,double thr=4){
 	// O(e) 输入边并进行存储
-	for(cls_s &cl:clss){
+	int n=clss.size();
+	for(int i=0; i<n; ++i){
 		std::string str;
 		for(; !str.length(); getline(std::cin,str));
 		replace_with(str,{'[',']','(',')',','},' ');
@@ -64,18 +63,17 @@ void get_cls(std::vector<cls_s> &clss,drawer &dw_ans,double thr=4){
 		for(double x1,y1,x2,y2; is>>x1>>y1>>x2>>y2; ){
 			vec a=(vec){x1,y1},b=(vec){x2,y2};
 			dw_ans.upd(a),dw_ans.upd(b);
+			input[i].push_back({a,b});
 			if(x1==x2||y1==y2){
-				assert(a.x>10&&a.y>10&&b.x>10&&b.y>10); // debug
-				cl.push_back((edg){a,b});
+				clss[i].push_back({a,b});
 			}else{
 				for(vec vt=(b-a).norm(thr); (b-a).len2()>vt.len2(); a+=vt){
-					add_bevel(cl,a,a+vt);
+					add_bevel(clss[i],a,a+vt);
 				}
-				add_bevel(cl,a,b);
+				add_bevel(clss[i],a,b);
 			}
 		}
-		dbg_cl(cl);
-		sanitize_vec(cl);
+		sanitize_vec(clss[i]);
 	}
 }
 
@@ -346,12 +344,12 @@ int main(){
 
 	int clcnt,mdlcnt;
 	std::cin>>clcnt>>mdlcnt;
-	std::vector<cls_s> org_cls(clcnt);
+	std::vector<cls_s> org_cls(clcnt),input_cls(clcnt);
 	std::vector<mdl> org_mdl(mdlcnt);
 	std::vector<std::string> mdl_name(mdlcnt);
 	std::vector<int> mdl_ref(mdlcnt,-1);
 	std::map<std::string,int> mdl_idx;
-	get_cls(org_cls,dw_ans);
+	get_cls(org_cls,input_cls,dw_ans);
 	//std::cerr<<"---get_md---"<<std::endl;
 	for(int i=0; i<mdlcnt; ++i){
 		std::cin>>mdl_name[i];
@@ -402,8 +400,9 @@ int main(){
 	}
 	//std::cerr<<"edge:"<<dw_ans.sf2mat((vec){0,0})<<dw_ans.sf2mat((vec){dw_ans.d_sf,dw_ans.d_sf})<<std::endl;
 	std::cerr<<"total length: "<<res_len<<std::endl;
-	for(cls_s cl:org_cls){
-		dw_ans.draw_cl(cl);
+	//for(cls_s cl:org_cls){ // debug switch
+	for(cls_s cl:input_cls){ // release switch
+		dw_ans.draw_cl(cl,0);
 	}
 	dw_ans.flush();
 	return 0;

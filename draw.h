@@ -28,7 +28,7 @@ struct drawer{
 	void draw_line(vec x,vec y,col_s c=col_red,double width=1,bool mat=1,double rect=0)const; // 画一条x到y的线段 是否是原图坐标
 	void draw_grid(int lcnt=10)const; // 画出cr的参考坐标系
 	void draw_mdl(mdl m,col_s c=col_grey,std::string id="")const; // 画出模块m
-	void draw_cl(const cls_s &cl)const; //画出该闭合回路（debug用）
+	void draw_cl(const cls_s &cl,const double rad=6)const; //画出该闭合回路
 };
 
 void dbg_cl(const cls_s &cl,std::initializer_list<mdl> mds={}); // 在dbg.png上画出这个闭合回路cl的形状和位置
