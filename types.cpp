@@ -11,8 +11,14 @@ vec vec::get(){
 	std::cin>>x>>y;
 	return (vec){x,y};
 }
+double vec::len2()const{
+	return x*x+y*y;
+}
 void vec::flip(){
 	std::swap(x,y);
+}
+bool vec::ispnt()const{
+	return cabs(x)+cabs(y)<eps*2;
 }
 vec vec::norm(const double l){
 	return *this=*this*(l/sqrt(x*x+y*y));
@@ -21,7 +27,7 @@ template <typename T>
 vec operator * (const vec &v,const T x){
 	return (vec){v.x*x,v.y*x};
 }
-double operator *(const vec &a,const vec &b){
+double operator * (const vec &a,const vec &b){
 	return a.x*b.y-a.y*b.x;
 }
 vec operator + (const vec &a,const vec &b){
@@ -29,6 +35,12 @@ vec operator + (const vec &a,const vec &b){
 }
 vec operator - (const vec &a,const vec &b){
 	return (vec){a.x-b.x,a.y-b.y};
+}
+vec vec::operator += (const vec &b){
+	return *this=*this+b;
+}
+vec vec::operator -= (const vec &b){
+	return *this=*this-b;
 }
 bool operator < (const vec &a,const vec &b){
 	return a.x==b.x?a.y<b.y:a.x<b.x;

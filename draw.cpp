@@ -115,6 +115,7 @@ void dbg_cl(const cls_s &cl,std::initializer_list<mdl> mds){
 		dbg.upd(m.v[0]),dbg.upd(m.v[1]);
 	}
 	dbg.zoom_out();
+	std::cerr<<"edge:"<<dbg.sf2mat((vec){0,0})<<dbg.sf2mat((vec){dbg.d_sf,dbg.d_sf})<<std::endl;
 	dbg.draw_grid();
 	dbg.draw_cl(cl);
 	for(mdl m:mds) dbg.draw_mdl(m);

@@ -10,8 +10,12 @@ struct col_s{
 struct vec{ // 向量
 	double x,y;
 	static vec get(); // 输入向量
+	double len2()const; // 长度的平方
 	void flip(); // 交换x,y
+	bool ispnt()const; // 记录向量是否为0
 	vec norm(const double l); // 把向量放缩到指定长度
+	vec operator +=(const vec &b);
+	vec operator -=(const vec &b);
 };
 struct edg{ // 边，a为起点，b为终点，合法区域在这个边向量的左边
 	vec a,b;
@@ -30,7 +34,7 @@ struct mdl{ // module, 记录该模块长方形的四个顶点，保证连续
 using cls_s=std::vector<edg>;
 
 template <typename T> vec operator * (const vec &v,const T x); // TODO template写在.h还是.cpp内？
-double operator *(const vec &a,const vec &b);
+double operator * (const vec &a,const vec &b);
 vec operator + (const vec &a,const vec &b);
 vec operator - (const vec &a,const vec &b);
 bool operator < (const vec &a,const vec &b);

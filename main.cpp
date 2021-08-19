@@ -41,28 +41,40 @@ void sanitize_vec(cls_s &cl){
 	}
 }
 
+void add_bevel(cls_s &cl,const vec a,const vec b){
+	assert(a.x>10&&a.y>10); // debug
+	assert(b.x>10&&b.y>10); // debug
+	vec c; // 把斜边拆分成横边和竖边
+	if(a.x<b.x&&a.y<b.y) c=(vec){a.x,b.y};
+	else if(a.x>b.x&&a.y<b.y) c=(vec){b.x,a.y};
+	else if(a.x>b.x&&a.y>b.y) c=(vec){a.x,b.y};
+	else if(a.x<b.x&&a.y>b.y) c=(vec){b.x,a.y};
+	else assert(0);
+	cl.push_back((edg){a,c});
+	cl.push_back((edg){c,b});
+}
+
 void get_cls(std::vector<cls_s> &clss,drawer &dw_ans,double thr=4){
 	// O(e) 输入边并进行存储
 	for(cls_s &cl:clss){
 		std::string str;
 		for(; !str.length(); getline(std::cin,str));
-		replace_with(str,std::vector<char>{'[',']','(',')',','},' ');
+		replace_with(str,{'[',']','(',')',','},' ');
 		std::istringstream is(str);
 		for(double x1,y1,x2,y2; is>>x1>>y1>>x2>>y2; ){
 			vec a=(vec){x1,y1},b=(vec){x2,y2};
 			dw_ans.upd(a),dw_ans.upd(b);
 			if(x1==x2||y1==y2){
+				assert(a.x>10&&a.y>10&&b.x>10&&b.y>10); // debug
 				cl.push_back((edg){a,b});
 			}else{
-				vec c; // 把斜边拆分成横边和竖边
-				if(a.x<b.x&&a.y<b.y) c=(vec){a.x,b.y};
-				if(a.x>b.x&&a.y<b.y) c=(vec){b.x,a.y};
-				if(a.x>b.x&&a.y>b.y) c=(vec){a.x,b.y};
-				if(a.x<b.x&&a.y>b.y) c=(vec){b.x,a.y};
-				cl.push_back((edg){a,c});
-				cl.push_back((edg){c,b});
+				for(vec vt=(b-a).norm(thr); (b-a).len2()>vt.len2(); a+=vt){
+					add_bevel(cl,a,a+vt);
+				}
+				add_bevel(cl,a,b);
 			}
 		}
+		dbg_cl(cl);
 		sanitize_vec(cl);
 	}
 }
@@ -286,6 +298,7 @@ void topo_rand(std::vector<int> &idx,std::vector<int> &mdl_ref){
 		}
 		idx[i]=x;
 	}
+	// debug
 	std::cerr<<"rand result: ";
 	for(int i:idx){
 		std::cerr<<i<<' ';
@@ -349,7 +362,7 @@ int main(){
 			std::string str2;
 			getline(std::cin,str2);
 			str+=str2;
-			replace_with(str,std::vector<char>{'(',')',','},' ');
+			replace_with(str,{'(',')',','},' ');
 			std::istringstream is(str);
 			double x,y;
 			is>>x>>y;
@@ -371,7 +384,7 @@ int main(){
 		std::vector<mdl> cur_mdl=solve_seq(org_cls,idx,org_mdl,mdl_ref);
 		double cur_len=calc_res(cur_mdl,org_mdl,mdl_ref);
 		if(res_len>cur_len){
-			std::cerr<<"better."<<std::endl;
+			std::cerr<<"better."<<std::endl; // debug
 			res_len=cur_len;
 			res_mdl.swap(cur_mdl);
 		}
