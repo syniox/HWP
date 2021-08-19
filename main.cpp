@@ -11,7 +11,6 @@
 #include "types.h"
 #include "draw.h"
 
-static const double eps=1e-6;
 // x,y: 平面直角坐标系
 // n: 模块数 e: 边数 e(cl): 某个闭合回路的边数
 // 时间： O(e*log(e)) + O(n*e*e)
@@ -218,7 +217,7 @@ void insert_mdl(cls_s &cl,mdl md){
 			md.flip();
 		}
 		// 寻找切分点和模块的另一边的位置
-		double bk_x=1e9,st_x=1e9,ed_x=1e9,other_y=1e9; // 断点，另一个y
+		double bk_x=inf,st_x=inf,ed_x=inf,other_y=inf; // 断点，另一个y
 		for(int i=0; i<2; ++i){
 			if(cabs(md.v[i].y-e.a.y)>eps){
 				other_y=md.v[i].y;
@@ -229,7 +228,7 @@ void insert_mdl(cls_s &cl,mdl md){
 			}
 			apn(bk_x,md.v[i].x);
 		}
-		assert(st_x!=1e9&&ed_x!=1e9&&other_y!=1e9);
+		assert(st_x!=inf&&ed_x!=inf&&other_y!=inf);
 		apx(bk_x,std::min(e.a.x,e.b.x));
 		vec pb=vec{bk_x,e.a.y},p1=vec{st_x,e.a.y};
 		vec p2=vec{st_x,other_y},p3=vec{ed_x,other_y},p4=vec{ed_x,e.a.y};
@@ -243,12 +242,18 @@ void insert_mdl(cls_s &cl,mdl md){
 		sanitize_vec(cl);
 		return;
 	}
+	//error occured
+	for(edg e:cl){
+		std::cerr<<e.a<<e.b<<std::endl;
+	}
+	std::cerr<<"md:"<<md.v[0]<<md.v[1]<<std::endl;
+	dbg_cl(cl,{md});
 	assert(0);
 }
 
 double calc_res(std::vector<mdl> m1,std::vector<mdl> m2){
 	// O(n)  计算一组方案的连线长度和
-	if(m1.size()!=m2.size()) return 1e18;
+	if(m1.size()!=m2.size()) return inf;
 	int sz=m1.size();
 	double res=0;
 	for(int i=0; i<sz; ++i){
@@ -293,7 +298,7 @@ std::vector<mdl> solve_seq(std::vector<cls_s> clss,const std::vector<int> &seq,c
 		}
 		int best_cl=0;
 		mdl mpos=get_great_pos(clss,best_cl,v,tgt);
-		if(get_dis(mpos.cntr(),tgt)>1e12){
+		if(get_dis(mpos.cntr(),tgt)>inf){
 			res[id].set_inf();
 		}else{
 			insert_mdl(clss[best_cl],mpos);
@@ -315,7 +320,6 @@ int main(){
 	// 输出：
 	// 共m行，每行输出该模块摆放位置的对角端点
 
-	//drawer dw_ans("oput.png",600,60);
 	drawer dw_ans("oput.png");
 
 	int clcnt,mdlcnt;
@@ -326,6 +330,7 @@ int main(){
 	std::vector<int> mdl_ref(mdlcnt,-1);
 	std::map<std::string,int> mdl_idx;
 	get_cls(org_cls,dw_ans);
+	//std::cerr<<"---get_md---"<<std::endl;
 	for(int i=0; i<mdlcnt; ++i){
 		std::cin>>mdl_name[i];
 		vec v=vec::get(),tgt;
@@ -341,6 +346,8 @@ int main(){
 			is>>x>>y;
 			tgt=(vec){x,y};
 			org_mdl[i]=mdl::build(tgt,v);
+			dw_ans.upd(org_mdl[i].v[0]);
+			dw_ans.upd(org_mdl[i].v[1]);
 		}else{
 			mdl_ref[i]=mdl_idx[str];
 			org_mdl[i]=(mdl){{v,vec()}};
@@ -362,14 +369,15 @@ int main(){
 	dw_ans.zoom_out();
 	dw_ans.draw_grid();
 	for(int i=0; i<mdlcnt; ++i){
-		if(res_mdl[i].v[0].x<0){
-			dw_ans.draw_mdl(org_mdl[i],col_blue,i+1);
+		if(res_mdl[i].v[0].x<=-inf){
+			if(mdl_ref[i]==-1) dw_ans.draw_mdl(org_mdl[i],col_blue,i+1);
 			std::cerr<<"Cannot put "<<i+1<<'.'<<std::endl;
 		}
-		dw_ans.draw_mdl(org_mdl[i],col_cyan,i+1);
+		if(mdl_ref[i]==-1) dw_ans.draw_mdl(org_mdl[i],col_cyan,i+1);
 		std::cerr<<i+1<<": "<<res_mdl[i].v[0]<<' '<<res_mdl[i].v[1]<<std::endl;
 		dw_ans.draw_mdl(res_mdl[i],col_grey,i+1);
 	}
+	//std::cerr<<"edge:"<<dw_ans.sf2mat((vec){0,0})<<dw_ans.sf2mat((vec){dw_ans.d_sf,dw_ans.d_sf})<<std::endl;
 	std::cerr<<"total length: "<<res_len<<std::endl;
 	for(cls_s cl:org_cls){
 		dw_ans.draw_cl(cl);

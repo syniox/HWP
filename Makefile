@@ -8,7 +8,7 @@ main: main.o types.o draw.o utils.o
 	g++ $(CXXFLAGS) -o main $^ -lcairo
 
 main.o: types.h draw.h utils.h
-types.o: types.h
+types.o: types.h utils.h
 draw.o: draw.h types.h utils.h
 
 ###

@@ -1,4 +1,5 @@
 #include "types.h"
+#include "utils.h"
 
 #include <iostream>
 #include <cassert>
@@ -29,7 +30,8 @@ bool operator < (const vec &a,const vec &b){
 	return a.x==b.x?a.y<b.y:a.x<b.x;
 }
 bool operator == (const vec &a,const vec &b){
-	return a.x==b.x&&a.y==b.y;
+	return cabs(a.x-b.x)<eps&&cabs(a.y-b.y)<eps;
+	//return a.x==b.x&&a.y==b.y;
 }
 std::ostream& operator << (std::ostream &out,const vec &v){
 	out<<'('<<v.x<<' '<<v.y<<')';
@@ -41,9 +43,9 @@ std::ostream& operator << (std::ostream &out,const edg &e){
 }
 
 int edg::dr()const{ // 返回向量方向，右0上1左2下3
-	assert(a.x==b.x||a.y==b.y);
+	assert(cabs(a.x-b.x)<eps||cabs(a.y-b.y)<eps);
 	assert(!(a==b));
-	if(a.y==b.y) return (a.x>b.x)<<1;
+	if(cabs(a.y-b.y)<eps) return (a.x>b.x)<<1;
 	else return (a.y>b.y)<<1|1;
 }
 void edg::flip(){
@@ -63,7 +65,7 @@ void mdl::flip(){
 }
 void mdl::set_inf(){
 	for(int i=0; i<2; ++i){
-		v[i].x=v[i].y=-1e12;
+		v[i].x=v[i].y=-inf;
 	}
 }
 mdl mdl::build(const vec &ctr,const vec &rct){

@@ -17,14 +17,14 @@ bool in_grid(vec x,double limit){
 //main
 
 drawer::drawer(std::string str,double d_sf){
-	x_low=y_low=1e12;
+	x_low=y_low=1e12,x_up=y_up=-1e12;
 	oput_str=str;
 	this->d_sf=d_sf;
 	surface=cairo_image_surface_create(CAIRO_FORMAT_ARGB32,d_sf,d_sf);
 	cr=cairo_create(surface);
 }
 drawer::drawer(const drawer &d){
-	std::cerr<<"warning: copying drawer "<<d.oput_str<<'.'<<std::endl;
+	std::cerr<<"[warning] copying drawer "<<d.oput_str<<'.'<<std::endl;
 	x_low=d.x_low,x_up=d.x_up;
 	y_low=d.y_low,y_up=d.y_up;
 }
@@ -35,6 +35,7 @@ void drawer::flush(){
 	cairo_surface_write_to_png(surface,oput_str.data());
 }
 void drawer::upd(const vec &a){
+	//std::cerr<<"upd: "<<a<<std::endl;
 	apn(x_low,a.x),apx(x_up,a.x);
 	apn(y_low,a.y),apx(y_up,a.y);
 }
@@ -47,6 +48,11 @@ vec drawer::mat2sf(const vec &a)const{
 	double x_pec=(a.x-x_low)/dmax;
 	double y_pec=1-(a.y-y_low)/dmax;
 	return (vec){x_pec*d_sf,y_pec*d_sf};
+}
+vec drawer::sf2mat(const vec &a)const{
+	double dmax=std::max((x_up-x_low),(y_up-y_low));
+	double x_pec=a.x/d_sf,y_pec=(d_sf-a.y)/d_sf;
+	return (vec){x_pec*dmax+x_low,y_pec*dmax+y_low};
 }
 void drawer::draw_line(vec x,vec y,col_s c,double width,bool mat,double rad)const{
 	// 画一条x到y的线段，mat表示输入是否为电路板上的坐标（而不是画布位置）
@@ -102,7 +108,7 @@ void drawer::draw_cl(const cls_s &cl)const{
 	for(edg e:cl) draw_line(e.a,e.b,col_red,1,1,6);
 }
 
-void dbg_cl(const cls_s &cl,std::initializer_list<mdl> mds={}){
+void dbg_cl(const cls_s &cl,std::initializer_list<mdl> mds){
 	// 在dbg.png上画出这个闭合回路cl的形状和位置 包括一些模块
 	drawer dbg("dbg.png");
 	for(edg e:cl){
@@ -112,6 +118,7 @@ void dbg_cl(const cls_s &cl,std::initializer_list<mdl> mds={}){
 		dbg.upd(m.v[0]),dbg.upd(m.v[1]);
 	}
 	dbg.zoom_out();
+	dbg.draw_grid();
 	dbg.draw_cl(cl);
 	for(mdl m:mds) dbg.draw_mdl(m);
 	dbg.flush();

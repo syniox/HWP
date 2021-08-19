@@ -6,6 +6,9 @@
 #include <algorithm>
 #include <vector>
 
+extern double eps;
+extern double inf;
+
 int rnd(const int l,const int r);
 
 template <typename T> void apn(T &x,const T y){
