@@ -383,7 +383,7 @@ int main(){
 	topo_rand(idx,mdl_ref);
 	std::vector<mdl> res_mdl=solve_seq(org_cls,idx,org_mdl,mdl_ref);
 	double res_len=calc_res(res_mdl,org_mdl,mdl_ref);
-	for(int times=5; times--; ){
+	for(int times=20; times--; ){
 		topo_rand(idx,mdl_ref);
 		std::vector<mdl> cur_mdl=solve_seq(org_cls,idx,org_mdl,mdl_ref);
 		double cur_len=calc_res(cur_mdl,org_mdl,mdl_ref);
@@ -400,13 +400,18 @@ int main(){
 			std::cerr<<"Cannot put "<<i+1<<'.'<<std::endl;
 			continue;
 		}
-		if(mdl_ref[i]==-1){
-			dw_ans.draw_line(res_mdl[i].cntr(),org_mdl[i].cntr(),col_blue,0.75);
-		}else{
-			dw_ans.draw_line(res_mdl[i].cntr(),res_mdl[mdl_ref[i]].cntr(),col_blue,0.75);
-		}
 		std::cerr<<i<<": "<<mdl_name[i]<<','<<res_mdl[i].v[0]<<' '<<res_mdl[i].v[1]<<std::endl;
 		dw_ans.draw_mdl(res_mdl[i],col_grey,mdl_name[i]);
+	}
+	for(int i=0; i<mdlcnt; ++i){
+		dw_ans.draw_pnt(res_mdl[i].cntr());
+		if(mdl_ref[i]==-1){
+			dw_ans.draw_line(res_mdl[i].cntr(),org_mdl[i].cntr(),col_blue,0.9,1,4);
+			dw_ans.draw_pnt(org_mdl[i].cntr());
+		}else{
+			dw_ans.draw_line(res_mdl[i].cntr(),res_mdl[mdl_ref[i]].cntr(),col_cyan,0.9,1,4);
+			dw_ans.draw_pnt(res_mdl[mdl_ref[i]].cntr());
+		}
 	}
 	//std::cerr<<"edge:"<<dw_ans.sf2mat((vec){0,0})<<dw_ans.sf2mat((vec){dw_ans.d_sf,dw_ans.d_sf})<<std::endl;
 	std::cerr<<"total length: "<<res_len<<std::endl;

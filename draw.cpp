@@ -7,6 +7,7 @@
 #include "types.h"
 #include "utils.h"
 
+static const double transparency=0.75;
 
 //helper
 
@@ -54,13 +55,19 @@ vec drawer::sf2mat(const vec &a)const{
 	double x_pec=a.x/d_sf,y_pec=(d_sf-a.y)/d_sf;
 	return (vec){x_pec*dmax+x_low,y_pec*dmax+y_low};
 }
+void drawer::draw_pnt(vec x,const double rad,col_s c,const bool mat)const{
+	if(mat) x=mat2sf(x);
+	cairo_set_source_rgba(cr,c.r,c.g,c.b,transparency);
+	cairo_arc(cr,x.x,x.y,rad,0,2*M_PI);
+	cairo_fill(cr);
+}
 void drawer::draw_line(vec x,vec y,col_s c,double width,bool mat,double rad)const{
 	// 画一条x到y的线段，mat表示输入是否为电路板上的坐标（而不是画布位置）
 	// 在向量指向的那一段做一个正方形
 	if(mat) x=mat2sf(x),y=mat2sf(y);
 	//std::cerr<<"draw: "<<x<<"->"<<y<<"(sf: "<<d_sf<<")"<<std::endl;
 	assert(in_grid(x,d_sf)&&in_grid(y,d_sf));
-	cairo_set_source_rgba(cr,c.r,c.g,c.b,0.6);
+	cairo_set_source_rgba(cr,c.r,c.g,c.b,transparency);
 	cairo_set_line_width(cr,width);
 	cairo_move_to(cr,x.x,x.y);
 	cairo_line_to(cr,y.x,y.y);
@@ -84,7 +91,7 @@ void drawer::draw_grid(int lcnt)const{
 }
 void drawer::draw_mdl(mdl m,col_s c,std::string id)const{
 	// 画出模块m
-	cairo_set_source_rgba(cr,c.r,c.g,c.b,0.6);
+	cairo_set_source_rgba(cr,c.r,c.g,c.b,transparency);
 	m.v[0]=mat2sf(m.v[0]),m.v[1]=mat2sf(m.v[1]);
 	double x=m.v[0].x,y=m.v[0].y,dx=m.v[1].x-x,dy=m.v[1].y-y;
 	if(dx<0) dx=-dx,x-=dx;
@@ -96,7 +103,7 @@ void drawer::draw_mdl(mdl m,col_s c,std::string id)const{
 	draw_line(vec{x+dx,y},vec{x+dx,y+dy},col_green,1,0);
 	draw_line(vec{x,y+dy},vec{x+dx,y+dy},col_green,1,0);
 	if(!id.length()) return;
-	cairo_set_source_rgba(cr,1,1,1,0.6);
+	cairo_set_source_rgba(cr,1,1,1,transparency);
 	cairo_set_font_size(cr,12);
 	cairo_move_to(cr,x+dx/2,y+dy/2);
 	cairo_show_text(cr,id.c_str());
