@@ -346,13 +346,14 @@ int main(){
 	std::cin>>clcnt>>mdlcnt;
 	std::vector<cls_s> org_cls(clcnt),input_cls(clcnt);
 	std::vector<mdl> org_mdl(mdlcnt);
-	std::vector<std::string> mdl_name(mdlcnt);
+	std::vector<std::string> mdl_name(mdlcnt),ref_name(mdlcnt);
 	std::vector<int> mdl_ref(mdlcnt,-1);
 	std::map<std::string,int> mdl_idx;
 	get_cls(org_cls,input_cls,dw_ans);
 	//std::cerr<<"---get_md---"<<std::endl;
 	for(int i=0; i<mdlcnt; ++i){
 		std::cin>>mdl_name[i];
+		mdl_idx[mdl_name[i]]=i;
 		vec v=vec::get(),tgt;
 		std::string str;
 		std::cin>>str;
@@ -369,8 +370,13 @@ int main(){
 			dw_ans.upd(org_mdl[i].v[0]);
 			dw_ans.upd(org_mdl[i].v[1]);
 		}else{
-			mdl_ref[i]=mdl_idx[str];
-			org_mdl[i]=(mdl){{v,vec()}};
+			ref_name[i]=str;
+			org_mdl[i]={v,vec()};
+		}
+	}
+	for(int i=0; i<mdlcnt; ++i){
+		if(ref_name[i]!=""){
+			mdl_ref[i]=mdl_idx[ref_name[i]];
 		}
 	}
 	std::vector<int> idx(mdlcnt);
@@ -391,19 +397,31 @@ int main(){
 	dw_ans.draw_grid();
 	for(int i=0; i<mdlcnt; ++i){
 		if(res_mdl[i].v[0].x<=-inf){
-			if(mdl_ref[i]==-1) dw_ans.draw_mdl(org_mdl[i],col_blue,mdl_name[i]);
 			std::cerr<<"Cannot put "<<i+1<<'.'<<std::endl;
+			continue;
 		}
-		if(mdl_ref[i]==-1) dw_ans.draw_mdl(org_mdl[i],col_cyan,mdl_name[i]);
+		if(mdl_ref[i]==-1){
+			dw_ans.draw_line(res_mdl[i].cntr(),org_mdl[i].cntr(),col_blue,0.75);
+		}else{
+			dw_ans.draw_line(res_mdl[i].cntr(),res_mdl[mdl_ref[i]].cntr(),col_blue,0.75);
+		}
 		std::cerr<<i<<": "<<mdl_name[i]<<','<<res_mdl[i].v[0]<<' '<<res_mdl[i].v[1]<<std::endl;
 		dw_ans.draw_mdl(res_mdl[i],col_grey,mdl_name[i]);
 	}
 	//std::cerr<<"edge:"<<dw_ans.sf2mat((vec){0,0})<<dw_ans.sf2mat((vec){dw_ans.d_sf,dw_ans.d_sf})<<std::endl;
 	std::cerr<<"total length: "<<res_len<<std::endl;
-	//for(cls_s cl:org_cls){ // debug switch
-	for(cls_s cl:input_cls){ // release switch
+	// debug switch
+	///*
+	for(cls_s cl:org_cls){
+		dw_ans.draw_cl(cl,5);
+	}
+	//*/
+	// release switch
+	/*
+	for(cls_s cl:input_cls){
 		dw_ans.draw_cl(cl,0);
 	}
+	//*/
 	dw_ans.flush();
 	return 0;
 }

@@ -31,4 +31,5 @@ struct drawer{
 	void draw_cl(const cls_s &cl,const double rad=6)const; //画出该闭合回路
 };
 
-void dbg_cl(const cls_s &cl,std::initializer_list<mdl> mds={}); // 在dbg.png上画出这个闭合回路cl的形状和位置
+void dbg_cl(const cls_s &cl,std::initializer_list<mdl> mds); // 在dbg.png上画出这个闭合回路cl的形状和位置
+void dbg_cl(const cls_s &cl); // 在dbg.png上画出这个闭合回路cl的形状

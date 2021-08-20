@@ -121,3 +121,16 @@ void dbg_cl(const cls_s &cl,std::initializer_list<mdl> mds){
 	for(mdl m:mds) dbg.draw_mdl(m);
 	dbg.flush();
 }
+
+void dbg_cl(const cls_s &cl){
+	// 在dbg.png上画出这个闭合回路cl的形状和位置 包括一些模块
+	drawer dbg("dbg.png");
+	for(edg e:cl){
+		dbg.upd(e.a),dbg.upd(e.b);
+	}
+	dbg.zoom_out();
+	std::cerr<<"edge:"<<dbg.sf2mat((vec){0,0})<<dbg.sf2mat((vec){dbg.d_sf,dbg.d_sf})<<std::endl;
+	dbg.draw_grid();
+	dbg.draw_cl(cl);
+	dbg.flush();
+}
