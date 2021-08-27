@@ -19,6 +19,7 @@ struct vec{ // 向量
 };
 struct edg{ // 边，a为起点，b为终点，合法区域在这个边向量的左边
 	vec a,b;
+	int id;
 	int dr() const;
 	void flip(); // 分别对a,b交换其x,y（get_great_pos的坐标系变换）
 	bool ispnt() const; // 这条边是不是退化成了一个点(a,b相同)
