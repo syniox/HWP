@@ -153,14 +153,14 @@ int main(){
 			// 邻边 有没有办法简化？
 			if(dr&1){
 				double low_y=e_vec[e_id].a.y,high_y=e_vec[e_id].b.y;
-				double low_x=e_vec[e_id].a.x,high_x=(e_vec[e_id]+dv[(dr+1)&3]).x;
+				double low_x=e_vec[e_id].a.x,high_x=(e_vec[e_id].a+dv[(dr+1)&3]).x;
 				inc_swp(low_y,high_y);
 				inc_swp(low_x,high_x);
 				e_lim[m_id].push_back({{high_x,low_y},{low_x,low_y}});
 				e_lim[m_id].push_back({{low_x,high_y},{high_x,high_y}});
 			}else{
 				double low_x=e_vec[e_id].a.x,high_x=e_vec[e_id].b.x;
-				double low_y=e_vec[e_id].a.y,high_y=(e_vec[e_id]+dv[(dr+1)&3]).y;
+				double low_y=e_vec[e_id].a.y,high_y=(e_vec[e_id].a+dv[(dr+1)&3]).y;
 				inc_swp(low_y,high_y);
 				inc_swp(low_x,high_x);
 				e_lim[m_id].push_back({{low_x,low_y},{low_x,high_y}});

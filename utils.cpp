@@ -9,7 +9,7 @@
 const double eps=1e-6;
 const double inf=1e12;
 
-std::vector<std::vector<int>> m_lim; // 模块间的限制
+std::vector<std::vector<double>> m_lim; // 模块间的限制
 std::vector<std::vector<edg>> e_lim; // 模块与边的限制
 
 int rnd(const int l,const int r){
