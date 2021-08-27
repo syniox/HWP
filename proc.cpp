@@ -178,14 +178,17 @@ void insert_mdl(cls_s &cl,mdl md,const int id){
 		vec pb=vec{bk_x,e.a.y},p1=vec{st_x,e.a.y};
 		vec p2=vec{st_x,other_y},p3=vec{ed_x,other_y},p4=vec{ed_x,e.a.y};
 		it->b=pb;
-		it=cl.insert(++it,(edg){pb,p1,++ecnt}),it=cl.insert(++it,(edg){p1,p2,++ecnt});
-		it=cl.insert(++it,(edg){p2,p3,++ecnt}),it=cl.insert(++it,(edg){p3,p4,++ecnt});
-		it=cl.insert(++it,(edg){p4,pb,++ecnt}),it=cl.insert(++it,(edg){pb,e.b,++ecnt});
+		it=cl.insert(++it,{pb,p1});
+		e_vec[++ecnt]={p1,p2},it=cl.insert(++it,{p1,p2});
+		e_vec[++ecnt]={p2,p3},it=cl.insert(++it,{p2,p3});
+		e_vec[++ecnt]={p3,p4},it=cl.insert(++it,{p3,p4});
+		it=cl.insert(++it,{p4,pb});
+		it=cl.insert(++it,{pb,e.b});
 		if(fliped){
-			e_mdl[id]={ecnt-1,ecnt-2,ecnt-3,0};
+			e_mdl[id]={ecnt-0,ecnt-1,ecnt-2,0};
 			flip_vec(cl);
 		}else{
-			e_mdl[id]={ecnt-2,ecnt-1,0,ecnt-3};
+			e_mdl[id]={ecnt-1,ecnt-0,0,ecnt-2};
 		}
 		sanitize_vec(cl);
 		return;

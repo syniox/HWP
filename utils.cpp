@@ -1,5 +1,6 @@
 // 与内容无关的基础代码 + 全局变量
 
+#include <iostream>
 #include <cstdio>
 #include <cassert>
 
@@ -13,6 +14,13 @@ std::vector<std::vector<edg>> e_lim; // 模块与边的限制
 
 int rnd(const int l,const int r){
 	return rand()%(r-l+1)+l;
+}
+
+std::string get_line(std::vector<char> repl){
+	std::string str;
+	for(; !str.length(); std::getline(std::cin,str));
+	replace_with(str,repl,' ');
+	return str;
 }
 
 void sanitize_vec(cls_s &cl){

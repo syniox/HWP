@@ -70,6 +70,9 @@ void edg::flip(){
 bool edg::ispnt()const{
 	return a==b;
 }
+edg edg::operator +(const vec &v){
+	return (edg){a+v,b+v};
+}
 
 vec mdl::cntr()const{
 	return (v[0]+v[1])*0.5;

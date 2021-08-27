@@ -1,10 +1,8 @@
 #include <iostream>
 #include <vector>
 #include <cassert>
-#include <algorithm>
-#include <cairo/cairo.h>
 #include <sstream>
-#include <cstdlib>
+#include <cctype>
 #include <map>
 
 #include "utils.h"
@@ -16,6 +14,7 @@
 // n: 模块数 e: 边数 e(cl): 某个闭合回路的边数
 // 时间： O(e*log(e)) + O(n*e*e)
 // assumption1: 模块的大小大于间隔大小
+// assumption2: 间隔要求只适用于模块在另一个方向上的投影与它有交的情况
 
 //TODO 用list代替vector
 
@@ -29,26 +28,24 @@ void add_bevel(cls_s &cl,const vec a,const vec b){
 	else if(a.x>b.x&&a.y>b.y) c=(vec){a.x,b.y};
 	else if(a.x<b.x&&a.y>b.y) c=(vec){b.x,a.y};
 	else assert(0);
-	cl.push_back({a,c,-1}); // 取消斜边计数?
-	cl.push_back({c,b,-1});
+	cl.push_back({a,c}); // 取消斜边计数?
+	cl.push_back({c,b});
 }
 
 void get_cls(std::vector<cls_s> &clss,std::vector<cls_s> &input,drawer &dw_ans,double thr=4){
 	// O(e) 输入边并进行存储
 	int n=clss.size();
 	for(int i=0; i<n; ++i){
-		std::string str;
-		for(; !str.length(); getline(std::cin,str));
-		replace_with(str,{'[',']','(',')',','},' ');
+		std::string str=get_line({'[',']','(',')',','});
 		std::istringstream is(str);
 		for(double x1,y1,x2,y2; is>>x1>>y1>>x2>>y2; ){
 			vec a=(vec){x1,y1},b=(vec){x2,y2};
 			dw_ans.upd(a),dw_ans.upd(b);
+			input[i].push_back({a,b});
 			if(x1==x2||y1==y2){
-				input[i].push_back({a,b,++ecnt});
-				clss[i].push_back({a,b,ecnt});
+				clss[i].push_back({a,b});
+				e_vec[++ecnt]={a,b};
 			}else{
-				input[i].push_back({a,b,-1});
 				for(vec vt=(b-a).norm(thr); (b-a).len2()>vt.len2(); a+=vt){
 					add_bevel(clss[i],a,a+vt);
 				}
@@ -100,16 +97,20 @@ int main(){
 
 	drawer dw_ans("oput.png");
 
-	int clcnt,mdlcnt;
-	std::cin>>clcnt>>mdlcnt;
+	int clcnt,mdlcnt,limcnt;
+	std::cin>>clcnt>>mdlcnt>>limcnt;
 	std::vector<cls_s> org_cls(clcnt),input_cls(clcnt);
 	std::vector<mdl> org_mdl(mdlcnt);
 	std::vector<std::string> mdl_name(mdlcnt),ref_name(mdlcnt);
 	std::vector<int> mdl_ref(mdlcnt,-1);
 	std::map<std::string,int> mdl_idx;
-	//std::cerr<<"---get_cls---"<<std::endl;
 	get_cls(org_cls,input_cls,dw_ans);
-	//std::cerr<<"---get_md---"<<std::endl;
+	e_lim.resize(mdlcnt);
+	m_lim.resize(mdlcnt);
+	for(auto &v:m_lim){
+		v.resize(mdlcnt);
+	}
+	//---get-mdl---
 	for(int i=0; i<mdlcnt; ++i){
 		std::cin>>mdl_name[i];
 		mdl_idx[mdl_name[i]]=i;
@@ -117,9 +118,7 @@ int main(){
 		std::string str;
 		std::cin>>str;
 		if(str[0]=='('){
-			std::string str2;
-			getline(std::cin,str2);
-			str+=str2;
+			str+=get_line({});
 			replace_with(str,{'(',')',','},' ');
 			std::istringstream is(str);
 			double x,y;
@@ -138,8 +137,44 @@ int main(){
 			mdl_ref[i]=mdl_idx[ref_name[i]];
 		}
 	}
-	//std::cerr<<"---get_lim---"<<std::endl;
-
+	//---get-lim---
+	while(limcnt--){
+		static vec dv[]={{1,0},{0,1},{-1,0},{0,-1}};
+		std::istringstream is(get_line({'(',')',',','V','H'}));
+		std::string str1,str2;
+		double dis;
+		is>>str1>>str2>>dis;
+		if(isdigit(str1[0])^isdigit(str2[0])){
+			if(isdigit(str1[0])) std::swap(str1,str2);
+			int m_id=mdl_idx[str1],e_id;
+			sscanf(str2.c_str(),"%d",&e_id); // TODO 与标准接轨
+			int dr=e_vec[e_id].dr();
+			e_lim[m_id].push_back(e_vec[e_id]+(dv[(dr+1)&3])*dis); // 对边
+			// 邻边 有没有办法简化？
+			if(dr&1){
+				double low_y=e_vec[e_id].a.y,high_y=e_vec[e_id].b.y;
+				double low_x=e_vec[e_id].a.x,high_x=(e_vec[e_id]+dv[(dr+1)&3]).x;
+				inc_swp(low_y,high_y);
+				inc_swp(low_x,high_x);
+				e_lim[m_id].push_back({{high_x,low_y},{low_x,low_y}});
+				e_lim[m_id].push_back({{low_x,high_y},{high_x,high_y}});
+			}else{
+				double low_x=e_vec[e_id].a.x,high_x=e_vec[e_id].b.x;
+				double low_y=e_vec[e_id].a.y,high_y=(e_vec[e_id]+dv[(dr+1)&3]).y;
+				inc_swp(low_y,high_y);
+				inc_swp(low_x,high_x);
+				e_lim[m_id].push_back({{low_x,low_y},{low_x,high_y}});
+				e_lim[m_id].push_back({{high_x,high_y},{high_x,low_y}});
+			}
+		}else if(isdigit(str1[0])){
+			int id1=mdl_idx[str1],id2=mdl_idx[str2];
+			m_lim[id1][id2]=m_lim[id2][id1]=dis;
+		}else{
+			std::cerr<<"[Error] limits between edge!"<<std::endl;
+			return 1;
+		}
+	}
+	//---get-ans---
 	std::vector<int> idx(mdlcnt);
 	topo_rand(idx,mdl_ref);
 	std::vector<mdl> res_mdl=solve_seq(org_cls,idx,org_mdl,mdl_ref,e_vec,mdlcnt);
@@ -154,6 +189,7 @@ int main(){
 			res_mdl.swap(cur_mdl);
 		}
 	}
+	//---oput---
 	dw_ans.zoom_out();
 	dw_ans.draw_grid();
 	for(int i=0; i<mdlcnt; ++i){
