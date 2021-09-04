@@ -17,6 +17,7 @@ int rnd(const int l,const int r){
 }
 
 std::string get_line(std::vector<char> repl){
+	// 读入一行字符串并替换部分字符为空格
 	std::string str;
 	for(; !str.length(); std::getline(std::cin,str));
 	replace_with(str,repl,' ');
@@ -25,15 +26,17 @@ std::string get_line(std::vector<char> repl){
 
 void sanitize_vec(cls_s &cl){
 	// O(e(cl)*e(cl)) 删除长度为0的边，合并相邻且方向相反的边
-	// TODO: optimize
+	// TODO: optimize(SPFA?)
 	for(int cnt=-1; cnt; ){
 		cnt=0;
+		// 删除长度为0的边
 		for(int i=cl.size()-1; i>=0; --i){
 			if(cl[i].ispnt()){
 				++cnt;
 				cl.erase(cl.begin()+i);
 			}
 		}
+		// 合并一次方向相反的边
 		for(int i=0; i<(int)cl.size(); ++i){
 			int a=i,b=(i+1)%cl.size();
 			if(((cl[a].dr()^cl[b].dr())&1)==0){

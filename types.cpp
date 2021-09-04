@@ -23,10 +23,6 @@ bool vec::ispnt()const{
 vec vec::norm(const double l){
 	return *this=*this*(l/sqrt(x*x+y*y));
 }
-template <typename T>
-vec operator * (const vec &v,const T x){
-	return (vec){v.x*x,v.y*x};
-}
 double operator * (const vec &a,const vec &b){
 	return a.x*b.y-a.y*b.x;
 }

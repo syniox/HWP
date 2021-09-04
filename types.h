@@ -1,3 +1,5 @@
+// 基础自定义结构类型
+
 #pragma once
 
 #include <iostream>
@@ -34,7 +36,9 @@ struct mdl{ // module, 记录该模块长方形的四个顶点，保证连续
 
 using cls_s=std::vector<edg>;
 
-template <typename T> vec operator * (const vec &v,const T x); // TODO template写在.h还是.cpp内？
+template <typename T> vec operator * (const vec &v,const T x){
+	return (vec){v.x*x,v.y*x};
+}
 double operator * (const vec &a,const vec &b);
 vec operator + (const vec &a,const vec &b);
 vec operator - (const vec &a,const vec &b);

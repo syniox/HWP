@@ -1,3 +1,5 @@
+// 给定一个模块接入顺序，寻找最优方案的主流程
+
 #pragma once
 
 #include <vector>

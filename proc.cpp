@@ -1,3 +1,5 @@
+// 给定一个模块接入顺序，寻找最优方案的主流程
+
 #include <vector>
 #include <array>
 #include <algorithm>
@@ -63,6 +65,8 @@ mdl get_great_pos_cl(const cls_s &cl,const std::vector<edg> ebuk[4],const vec rc
 	for(edg cur_e:cl){
 		if(cur_e.dr()&1) continue;
 		bool rvld=(cur_e.dr()==2)^fliped;
+		// pa, pb: 边的极大极小值
+		// a,b: 模块依附在这条边上时的最左最右值
 		double pa=std::min(cur_e.a.x,cur_e.b.x),a=pa-rct.x+eps*2;
 		double pb=std::max(cur_e.a.x,cur_e.b.x),b=pb+rct.x-eps*2;
 		double line_y=cur_e.a.y+rct.y*(0.5-rvld);
@@ -80,7 +84,8 @@ mdl get_great_pos_cl(const cls_s &cl,const std::vector<edg> ebuk[4],const vec rc
 		double ed=a;
 		// 遍历与这条边方向相反的边，找出合法的段，计算最小代价并更新答案
 		for(edg e:ebuk[cur_e.dr()^2]){
-			if(cabs(e.a.y-line_y)*2>rct.y-eps&&cabs(e.a.y-cur_e.a.y)>eps) continue;
+			if(cabs(e.a.y-line_y)*2>rct.y-eps&&cabs(e.a.y-cur_e.a.y)>eps) continue; // 非法段连续
+			// 非法段断开（则中间的为合法段）
 			if(!cur_e.dr()) std::swap(e.a,e.b);
 			if(e.a.x>ed){
 				update_gpos(gpos,ed,std::min(e.a.x,b),rct,tgt,line_y);
@@ -117,7 +122,7 @@ mdl get_great_pos_basic(const std::vector<cls_s> &clss,int &best_cl,const vec rc
 
 mdl get_great_pos(std::vector<cls_s> &clss,int &best_cl,vec rct,vec tgt,std::vector<edg> e_lim){
 	// O(e*e) 寻找模块摆放的最优位置
-	// 遍历矩阵和依附边的朝向，函数返回模块最后占用的位置
+	// 遍历矩阵和依附边的朝向（交换矩阵xy或坐标系的xy），函数返回模块最后占用的位置
 	// TODO: 把排序函数从basic中提出来
 	// TODO: flip_vec &cl safe?
 	mdl mpos[4];
