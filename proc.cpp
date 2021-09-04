@@ -95,6 +95,7 @@ mdl get_great_pos_cl(const cls_s &cl,const std::vector<edg> ebuk[4],const vec rc
 mdl get_great_pos_basic(const std::vector<cls_s> &clss,int &best_cl,const vec rct,const vec tgt,const bool fliped){
 	// O(e*e) 一个坐标系和模块方向的最优解（横向，坐标系是否经过变换）
 	std::vector<edg> ebuk[4];
+	// 预处理 把边分类按坐标排序
 	for(cls_s cl:clss){
 		for(edg e:cl) ebuk[e.dr()].push_back(e);
 	}
@@ -104,6 +105,7 @@ mdl get_great_pos_basic(const std::vector<cls_s> &clss,int &best_cl,const vec rc
 	}
 	mdl gpos; // great pos
 	gpos.set_inf();
+	// 遍历所有合法闭环，寻找最优解 TODO: 直接把边拆散时是否边数会过多?
 	for(int i=0; i<(int)clss.size(); ++i){
 		mdl pos=get_great_pos_cl(clss[i],ebuk,rct,tgt,fliped);
 		if(get_dis(pos.cntr(),tgt)<get_dis(gpos.cntr(),tgt)){
@@ -115,7 +117,7 @@ mdl get_great_pos_basic(const std::vector<cls_s> &clss,int &best_cl,const vec rc
 
 mdl get_great_pos(std::vector<cls_s> &clss,int &best_cl,vec rct,vec tgt,std::vector<edg> e_lim){
 	// O(e*e) 寻找模块摆放的最优位置
-	// 函数返回模块最后占用的位置
+	// 遍历矩阵和依附边的朝向，函数返回模块最后占用的位置
 	// TODO: 把排序函数从basic中提出来
 	// TODO: flip_vec &cl safe?
 	mdl mpos[4];
@@ -148,6 +150,7 @@ void insert_mdl(cls_s &cl,mdl md,const int id){
 	// O(e**2) 将模块摆放的区域设为不可用区域（假设该模块紧贴边缘）
 	// 找到一条和模块相邻的边，在他们的公共位置上找一个断点，把它作为绘画的起点和终点，
 	// 画出模块的轮廓，然后对无效的边界进行整理
+	// TODO 模块膨胀后不一定与某条边相连
 	using cls_i=cls_s::iterator;
 	for(cls_i it=cl.begin(); it!=cl.end(); ++it){
 		// 找一条与这个模块相邻的边
@@ -174,6 +177,7 @@ void insert_mdl(cls_s &cl,mdl md,const int id){
 		}
 		assert(st_x!=inf&&ed_x!=inf&&other_y!=inf);
 		apx(bk_x,std::min(e.a.x,e.b.x));
+		// 把那条边从切分点破开，绕模块一圈后从断点继续出发
 		vec pb=vec{bk_x,e.a.y},p1=vec{st_x,e.a.y};
 		vec p2=vec{st_x,other_y},p3=vec{ed_x,other_y},p4=vec{ed_x,e.a.y};
 		it->b=pb;
@@ -212,6 +216,7 @@ std::vector<mdl> solve_seq(std::vector<cls_s> clss,const std::vector<int> &seq,
 	for(mdl &m: res) m.set_inf();
 	for(int id:seq){
 		vec v,tgt;
+		//寻找模块连接位置
 		if(mdl_ref[id]==-1){
 			tgt=mds[id].cntr();
 			v=(vec){cabs(mds[id].v[0].x-mds[id].v[1].x),cabs(mds[id].v[0].y-mds[id].v[1].y)};
@@ -219,6 +224,7 @@ std::vector<mdl> solve_seq(std::vector<cls_s> clss,const std::vector<int> &seq,
 			tgt=res[mdl_ref[id]].cntr();
 			v=mds[id].v[0];
 		}
+		//寻找离最优位置最近的点
 		int best_cl=0;
 		mdl mpos=get_great_pos(clss,best_cl,v,tgt,{}); // TODO 使用lim_e
 		if(get_dis(mpos.cntr(),tgt)>inf){
