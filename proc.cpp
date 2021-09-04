@@ -8,7 +8,6 @@
 #include "draw.h"
 
 
-static int ecnt;
 static std::vector<edg> e_vec;
 static std::vector<std::array<int,4>> e_mdl;
 
@@ -179,11 +178,12 @@ void insert_mdl(cls_s &cl,mdl md,const int id){
 		vec p2=vec{st_x,other_y},p3=vec{ed_x,other_y},p4=vec{ed_x,e.a.y};
 		it->b=pb;
 		it=cl.insert(++it,{pb,p1});
-		e_vec[++ecnt]={p1,p2},it=cl.insert(++it,{p1,p2});
-		e_vec[++ecnt]={p2,p3},it=cl.insert(++it,{p2,p3});
-		e_vec[++ecnt]={p3,p4},it=cl.insert(++it,{p3,p4});
+		e_vec.push_back({p1,p2}),it=cl.insert(++it,{p1,p2});
+		e_vec.push_back({p2,p3}),it=cl.insert(++it,{p2,p3});
+		e_vec.push_back({p3,p4}),it=cl.insert(++it,{p3,p4});
 		it=cl.insert(++it,{p4,pb});
 		it=cl.insert(++it,{pb,e.b});
+		int ecnt=e_vec.size()-1;
 		if(fliped){
 			e_mdl[id]={ecnt-0,ecnt-1,ecnt-2,0};
 			flip_vec(cl);

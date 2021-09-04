@@ -18,7 +18,6 @@
 
 //TODO 用list代替vector
 
-static int ecnt; // TODO 重新初始化
 static std::vector<edg> e_vec; // 存储边
 
 void add_bevel(cls_s &cl,const vec a,const vec b){
@@ -44,7 +43,7 @@ void get_cls(std::vector<cls_s> &clss,std::vector<cls_s> &input,drawer &dw_ans,d
 			input[i].push_back({a,b});
 			if(x1==x2||y1==y2){
 				clss[i].push_back({a,b});
-				e_vec[++ecnt]={a,b};
+				e_vec.push_back({a,b});
 			}else{
 				for(vec vt=(b-a).norm(thr); (b-a).len2()>vt.len2(); a+=vt){
 					add_bevel(clss[i],a,a+vt);
