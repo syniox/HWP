@@ -63,3 +63,14 @@ double calc_res(std::vector<mdl> m_res,std::vector<mdl> m_org,std::vector<int> r
 	}
 	return res;
 }
+
+void add_bevel(cls_s &cl,const vec a,const vec b){
+	vec c; // 把斜边拆分成横边和竖边
+	if(a.x<b.x&&a.y<b.y) c=(vec){a.x,b.y};
+	else if(a.x>b.x&&a.y<b.y) c=(vec){b.x,a.y};
+	else if(a.x>b.x&&a.y>b.y) c=(vec){a.x,b.y};
+	else if(a.x<b.x&&a.y>b.y) c=(vec){b.x,a.y};
+	else assert(0);
+	cl.push_back({a,c}); // 取消斜边计数?
+	cl.push_back({c,b});
+}

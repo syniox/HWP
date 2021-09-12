@@ -20,17 +20,6 @@
 
 static std::vector<edg> e_vec; // 存储边
 
-void add_bevel(cls_s &cl,const vec a,const vec b){
-	vec c; // 把斜边拆分成横边和竖边
-	if(a.x<b.x&&a.y<b.y) c=(vec){a.x,b.y};
-	else if(a.x>b.x&&a.y<b.y) c=(vec){b.x,a.y};
-	else if(a.x>b.x&&a.y>b.y) c=(vec){a.x,b.y};
-	else if(a.x<b.x&&a.y>b.y) c=(vec){b.x,a.y};
-	else assert(0);
-	cl.push_back({a,c}); // 取消斜边计数?
-	cl.push_back({c,b});
-}
-
 void get_cls(std::vector<cls_s> &clss,std::vector<cls_s> &input,drawer &dw_ans,double thr=4){
 	// O(e) 输入边并进行存储
 	int n=clss.size();
@@ -114,7 +103,7 @@ int main(){
 		vec v=vec::get(),tgt;
 		std::string str;
 		std::cin>>str;
-		if(str[0]=='('){
+		if(str[0]=='('){ // 连接点为固定坐标
 			str+=get_line({});
 			replace_with(str,{'(',')',','},' ');
 			std::istringstream is(str);
@@ -122,9 +111,10 @@ int main(){
 			is>>x>>y;
 			tgt=(vec){x,y};
 			org_mdl[i]=mdl::build(tgt,v);
+			//更新坐标范围
 			dw_ans.upd(org_mdl[i].v[0]);
 			dw_ans.upd(org_mdl[i].v[1]);
-		}else{
+		}else{ // 连接点在模块上
 			ref_name[i]=str;
 			org_mdl[i]={v,vec()};
 		}
@@ -141,7 +131,7 @@ int main(){
 		std::string str1,str2;
 		double dis;
 		is>>str1>>str2>>dis;
-		if(isdigit(str1[0])^isdigit(str2[0])){
+		if(isdigit(str1[0])^isdigit(str2[0])){ // 边对模块的间隔要求
 			if(isdigit(str1[0])) std::swap(str1,str2);
 			int m_id=mdl_idx[str1],e_id;
 			sscanf(str2.c_str(),"%d",&e_id); // TODO 与标准接轨
@@ -149,6 +139,7 @@ int main(){
 			e_lim[m_id].push_back(e_vec[e_id]+(dv[(dr+1)&3])*dis); // 对边
 			// 邻边 有没有办法简化？
 			if(dr&1){
+				// 强制定义边的方向, 下else同理
 				double low_y=e_vec[e_id].a.y,high_y=e_vec[e_id].b.y;
 				double low_x=e_vec[e_id].a.x,high_x=(e_vec[e_id].a+dv[(dr+1)&3]).x;
 				inc_swp(low_y,high_y);
@@ -163,7 +154,7 @@ int main(){
 				e_lim[m_id].push_back({{low_x,low_y},{low_x,high_y}});
 				e_lim[m_id].push_back({{high_x,high_y},{high_x,low_y}});
 			}
-		}else if(isdigit(str1[0])){
+		}else if(isdigit(str1[0])){ // 模块对模块的间隔要求
 			int id1=mdl_idx[str1],id2=mdl_idx[str2];
 			m_lim[id1][id2]=m_lim[id2][id1]=dis;
 		}else{
@@ -180,7 +171,7 @@ int main(){
 		topo_rand(idx,mdl_ref);
 		std::vector<mdl> cur_mdl=solve_seq(org_cls,idx,org_mdl,mdl_ref,e_vec,mdlcnt);
 		double cur_len=calc_res(cur_mdl,org_mdl,mdl_ref);
-		if(res_len>cur_len){
+		if(res_len>cur_len){ // 当前结果优于最优结果
 			std::cerr<<"better."<<std::endl; // debug
 			res_len=cur_len;
 			res_mdl.swap(cur_mdl);
@@ -189,6 +180,7 @@ int main(){
 	//---oput---
 	dw_ans.zoom_out();
 	dw_ans.draw_grid();
+	// 画模块
 	for(int i=0; i<mdlcnt; ++i){
 		if(res_mdl[i].v[0].x<=-inf){
 			std::cerr<<"Cannot put "<<i+1<<'.'<<std::endl;
@@ -197,6 +189,7 @@ int main(){
 		std::cerr<<i<<": "<<mdl_name[i]<<','<<res_mdl[i].v[0]<<' '<<res_mdl[i].v[1]<<std::endl;
 		dw_ans.draw_mdl(res_mdl[i],col_grey,mdl_name[i]);
 	}
+	// 画模块的连接线
 	for(int i=0; i<mdlcnt; ++i){
 		dw_ans.draw_pnt(res_mdl[i].cntr());
 		if(mdl_ref[i]==-1){

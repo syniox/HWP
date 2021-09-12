@@ -41,3 +41,5 @@ void sanitize_vec(cls_s &cl);
 // O(e(cl)*e(cl)) 删除长度为0的边，合并相邻且方向相反的边
 double calc_res(std::vector<mdl> m_res,std::vector<mdl> m_org,std::vector<int> ref);
 // O(n)  计算一组方案的连线长度和
+void add_bevel(cls_s &cl,const vec a,const vec b);
+// O(1) 将一条斜边拆成两条直边插入闭合回路中

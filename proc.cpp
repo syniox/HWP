@@ -151,11 +151,12 @@ mdl get_great_pos(std::vector<cls_s> &clss,int &best_cl,vec rct,vec tgt,std::vec
 	return pos;
 }
 
-void insert_mdl(cls_s &cl,mdl md,const int id){
+bool insert_mdl(cls_s &cl,mdl md,const int id){
 	// O(e**2) 将模块摆放的区域设为不可用区域（假设该模块紧贴边缘）
 	// 找到一条和模块相邻的边，在他们的公共位置上找一个断点，把它作为绘画的起点和终点，
 	// 画出模块的轮廓，然后对无效的边界进行整理
-	// TODO 模块膨胀后不一定与某条边相连
+	// 返回是否能与某条边相连
+	// TODO 相邻的边不一定在这上面？
 	using cls_i=cls_s::iterator;
 	for(cls_i it=cl.begin(); it!=cl.end(); ++it){
 		// 找一条与这个模块相邻的边
@@ -200,15 +201,9 @@ void insert_mdl(cls_s &cl,mdl md,const int id){
 			e_mdl[id]={ecnt-1,ecnt-0,0,ecnt-2};
 		}
 		sanitize_vec(cl);
-		return;
+		return 1;
 	}
-	//error occured
-	for(edg e:cl){
-		std::cerr<<e.a<<e.b<<std::endl;
-	}
-	std::cerr<<"md:"<<md.v[0]<<md.v[1]<<std::endl;
-	dbg_cl(cl,{md});
-	assert(0);
+	return 0;
 }
 
 std::vector<mdl> solve_seq(std::vector<cls_s> clss,const std::vector<int> &seq,
@@ -235,7 +230,12 @@ std::vector<mdl> solve_seq(std::vector<cls_s> clss,const std::vector<int> &seq,
 		if(get_dis(mpos.cntr(),tgt)>inf){
 			res[id].set_inf();
 		}else{
-			insert_mdl(clss[best_cl],mpos,id);
+			if(!insert_mdl(clss[best_cl],mpos,id)){ // best_cl?
+				clss.push_back(cls_s());
+				cls_s &t=clss.rbegin();
+				add_bevel(t,mpos.v[0],mpos.v[1]);
+				add_bevel(t,mpos.v[1],mpos.v[0]);
+			}
 			res[id]=mpos;
 		}
 	}
