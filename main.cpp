@@ -96,14 +96,15 @@ int main(){
 	for(auto &v:m_lim){
 		v.resize(mdlcnt);
 	}
-	//---get-mdl---
+	// ---输入模块和其连接点---
 	for(int i=0; i<mdlcnt; ++i){
 		std::cin>>mdl_name[i];
 		mdl_idx[mdl_name[i]]=i;
 		vec v=vec::get(),tgt;
 		std::string str;
 		std::cin>>str;
-		if(str[0]=='('){ // 连接点为固定坐标
+		// 判断模块的连接点并进行存储
+		if(str[0]=='('){ // 固定坐标
 			str+=get_line({});
 			replace_with(str,{'(',')',','},' ');
 			std::istringstream is(str);
@@ -114,7 +115,7 @@ int main(){
 			//更新坐标范围
 			dw_ans.upd(org_mdl[i].v[0]);
 			dw_ans.upd(org_mdl[i].v[1]);
-		}else{ // 连接点在模块上
+		}else{ // 模块上
 			ref_name[i]=str;
 			org_mdl[i]={v,vec()};
 		}
@@ -124,7 +125,7 @@ int main(){
 			mdl_ref[i]=mdl_idx[ref_name[i]];
 		}
 	}
-	//---get-lim---
+	// ---输入模块的距离限制---
 	while(limcnt--){
 		// 输入限制并进行类型判断
 		static vec dv[]={{1,0},{0,1},{-1,0},{0,-1}};
@@ -163,7 +164,7 @@ int main(){
 			return 1;
 		}
 	}
-	//---get-ans---
+	// ---寻找排列并计算方案---
 	std::vector<int> idx(mdlcnt);
 	topo_rand(idx,mdl_ref);
 	std::vector<mdl> res_mdl=solve_seq(org_cls,idx,org_mdl,mdl_ref,e_vec,mdlcnt);
@@ -178,7 +179,7 @@ int main(){
 			res_mdl.swap(cur_mdl);
 		}
 	}
-	//---oput---
+	// ---输出方案---
 	dw_ans.zoom_out();
 	dw_ans.draw_grid();
 	// 画模块

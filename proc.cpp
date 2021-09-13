@@ -170,7 +170,8 @@ bool insert_mdl(cls_s &cl,mdl md,const int id){
 			md.flip();
 		}
 		// 寻找切分点和模块的另一边的位置
-		double bk_x=inf,st_x=inf,ed_x=inf,other_y=inf; // 断点，另一个y
+		// 边(st_x,ed_x)在bk_x处断开，模块放上去后另一条边的y坐标是other_y
+		double bk_x=inf,st_x=inf,ed_x=inf,other_y=inf;
 		for(int i=0; i<2; ++i){
 			if(cabs(md.v[i].y-e.a.y)>eps){
 				other_y=md.v[i].y;
