@@ -126,6 +126,7 @@ int main(){
 	}
 	//---get-lim---
 	while(limcnt--){
+		// 输入限制并进行类型判断
 		static vec dv[]={{1,0},{0,1},{-1,0},{0,-1}};
 		std::istringstream is(get_line({'(',')',',','V','H'}));
 		std::string str1,str2;
@@ -138,7 +139,7 @@ int main(){
 			int dr=e_vec[e_id].dr();
 			e_lim[m_id].push_back(e_vec[e_id]+(dv[(dr+1)&3])*dis); // 对边
 			// 邻边 有没有办法简化？
-			if(dr&1){
+			if(dr&1){ // 竖向
 				// 强制定义边的方向, 下else同理
 				double low_y=e_vec[e_id].a.y,high_y=e_vec[e_id].b.y;
 				double low_x=e_vec[e_id].a.x,high_x=(e_vec[e_id].a+dv[(dr+1)&3]).x;
@@ -146,7 +147,7 @@ int main(){
 				inc_swp(low_x,high_x);
 				e_lim[m_id].push_back({{high_x,low_y},{low_x,low_y}});
 				e_lim[m_id].push_back({{low_x,high_y},{high_x,high_y}});
-			}else{
+			}else{ // 横向
 				double low_x=e_vec[e_id].a.x,high_x=e_vec[e_id].b.x;
 				double low_y=e_vec[e_id].a.y,high_y=(e_vec[e_id].a+dv[(dr+1)&3]).y;
 				inc_swp(low_y,high_y);
