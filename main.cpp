@@ -72,15 +72,7 @@ void topo_rand(std::vector<int> &idx,std::vector<int> &mdl_ref){
 }
 
 int main(){
-	// 输入格式1：(当前使用格式)
-	// 第一行输入空白区域数量n 模块数量m 限制条数l
-	// 接下来n行，每行第一个数是e，表示该空白区域的边界点数；接下来2e个数，依次表示边界上逆时针顺序的点的坐标；
-	// 接下来m行，每行4个数w, h, x, y，表示矩形的最佳位置是(x,y)到(x+w, y+h)画出的矩形。
-	// 接下来l行，每输入两个字符串，字母开头代表模块，数字开头代表边
-	// 输出：
-	// 前m行每行输出该模块摆放位置的对角端点
-	// 最后一行输出连线的总长度
-
+	// 输入格式见readme
 	drawer dw_ans("oput.png");
 
 	int clcnt,mdlcnt,limcnt;
