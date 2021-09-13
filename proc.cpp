@@ -232,7 +232,7 @@ std::vector<mdl> solve_seq(std::vector<cls_s> clss,const std::vector<int> &seq,
 		}else{
 			if(!insert_mdl(clss[best_cl],mpos,id)){ // best_cl?
 				clss.push_back(cls_s());
-				cls_s &t=clss.rbegin();
+				cls_s &t=clss[clss.size()-1];
 				add_bevel(t,mpos.v[0],mpos.v[1]);
 				add_bevel(t,mpos.v[1],mpos.v[0]);
 			}
