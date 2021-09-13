@@ -20,28 +20,30 @@
 
 static std::vector<edg> e_vec; // 存储边
 
-void get_cls(std::vector<cls_s> &clss,std::vector<cls_s> &input,drawer &dw_ans,double thr=4){
-	// O(e) 输入边并进行存储
-	int n=clss.size();
-	for(int i=0; i<n; ++i){
-		std::string str=get_line({'[',']','(',')',','});
-		std::istringstream is(str);
-		for(double x1,y1,x2,y2; is>>x1>>y1>>x2>>y2; ){
-			vec a=(vec){x1,y1},b=(vec){x2,y2};
-			dw_ans.upd(a),dw_ans.upd(b);
-			input[i].push_back({a,b});
-			if(x1==x2||y1==y2){
-				clss[i].push_back({a,b});
-				e_vec.push_back({a,b});
-			}else{
-				for(vec vt=(b-a).norm(thr); (b-a).len2()>vt.len2(); a+=vt){
-					add_bevel(clss[i],a,a+vt);
-				}
-				add_bevel(clss[i],a,b);
+void get_cls(std::string str,std::vector<cls_s> &clss,std::vector<cls_s> &input,drawer &dw_ans,double thr=4){
+	// O(e) 给一个闭包串，进行存储
+	if(!validstr(str)) return;
+	replace_with(str,{'[',']','(',')',','},' ');
+	clss.push_back(cls_s());
+	input.push_back(cls_s());
+	int i=clss.size()-1;
+	std::istringstream is(str);
+	for(double x1,y1,x2,y2; is>>x1>>y1>>x2>>y2; ){
+		vec a=(vec){x1,y1},b=(vec){x2,y2};
+		dw_ans.upd(a),dw_ans.upd(b);
+		input[i].push_back({a,b});
+		if(x1==x2||y1==y2){
+			clss[i].push_back({a,b});
+			e_vec.push_back({a,b});
+		}else{
+			for(vec vt=(b-a).norm(thr); (b-a).len2()>vt.len2(); a+=vt){
+				add_bevel(clss[i],a,a+vt);
 			}
+			add_bevel(clss[i],a,b);
 		}
-		sanitize_vec(clss[i]);
 	}
+	sanitize_vec(clss[i]);
+
 }
 
 void topo_rand(std::vector<int> &idx,std::vector<int> &mdl_ref){
@@ -73,35 +75,46 @@ void topo_rand(std::vector<int> &idx,std::vector<int> &mdl_ref){
 
 int main(){
 	// 输入格式见readme
+	// 未能处理距离限制
 	drawer dw_ans("oput.png");
 
-	int clcnt,mdlcnt,limcnt;
-	std::cin>>clcnt>>mdlcnt>>limcnt;
-	std::vector<cls_s> org_cls(clcnt),input_cls(clcnt);
-	std::vector<mdl> org_mdl(mdlcnt);
-	std::vector<std::string> mdl_name(mdlcnt),ref_name(mdlcnt);
-	std::vector<int> mdl_ref(mdlcnt,-1);
+	int mdlcnt=0;
+	std::vector<cls_s> org_cls,input_cls;
+	std::vector<mdl> org_mdl;
+	std::vector<std::string> mdl_name,ref_name;
+	std::vector<int> mdl_ref;
 	std::map<std::string,int> mdl_idx;
-	get_cls(org_cls,input_cls,dw_ans);
-	e_lim.resize(mdlcnt);
-	m_lim.resize(mdlcnt);
-	for(auto &v:m_lim){
-		v.resize(mdlcnt);
+	std::string inbuf;
+	// 输入闭合回路 TODO 判断合法性
+	while(std::getline(std::cin,inbuf)&&inbuf.find("器件")==std::string::npos){
+		get_cls(inbuf,org_cls,input_cls,dw_ans);
 	}
-	// ---输入模块和其连接点---
-	for(int i=0; i<mdlcnt; ++i){
-		std::cin>>mdl_name[i];
-		mdl_idx[mdl_name[i]]=i;
-		vec v=vec::get(),tgt;
+	//输入模块
+	while(std::getline(std::cin,inbuf)){
+		if(!validstr(inbuf)) continue;
+		int i=mdlcnt++;
+		e_lim.push_back(std::vector<edg>());
+		m_lim.push_back(std::vector<double>(mdlcnt));
+		mdl_name.push_back(std::string());
+		ref_name.push_back(std::string());
+		org_mdl.push_back({vec(),vec()});
+		for(auto &v:m_lim){
+			v.push_back(0);
+		}
+		std::istringstream is(inbuf);
+		is>>mdl_name[i];
+		vec v,tgt;
+		is>>v.x>>v.y;
 		std::string str;
-		std::cin>>str;
-		// 判断模块的连接点并进行存储
+		std::getline(is,str);
+		for(; str[0]==' '; str.erase(0,0)){
+			assert(!str.empty());
+		}
 		if(str[0]=='('){ // 固定坐标
-			str+=get_line({});
 			replace_with(str,{'(',')',','},' ');
-			std::istringstream is(str);
+			std::istringstream istr(str);
 			double x,y;
-			is>>x>>y;
+			istr>>x>>y;
 			tgt=(vec){x,y};
 			org_mdl[i]=mdl::build(tgt,v);
 			//更新坐标范围
@@ -118,6 +131,7 @@ int main(){
 		}
 	}
 	// ---输入模块的距离限制---
+	/*
 	while(limcnt--){
 		// 输入限制并进行类型判断
 		static vec dv[]={{1,0},{0,1},{-1,0},{0,-1}};
@@ -156,6 +170,7 @@ int main(){
 			return 1;
 		}
 	}
+	*/
 	// ---寻找排列并计算方案---
 	std::vector<int> idx(mdlcnt);
 	topo_rand(idx,mdl_ref);

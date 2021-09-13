@@ -36,6 +36,7 @@ void replace_with(T1 &str,std::vector<T2> repl,T2 p){
 	for(T2 c:repl) std::replace(str.begin(),str.end(),c,p);
 }
 
+bool validstr(const std::string &str); // 查看当前字符串是否有意义
 std::string get_line(std::vector<char> repl); //读入一行非空串并替换部分字符为空格
 void sanitize_vec(cls_s &cl);
 // O(e(cl)*e(cl)) 删除长度为0的边，合并相邻且方向相反的边

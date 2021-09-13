@@ -16,18 +16,19 @@ int rnd(const int l,const int r){
 	return rand()%(r-l+1)+l;
 }
 
+bool validstr(const std::string &str){
+	if(!str.length()) return 0;
+	bool f=1;
+	for(const char c:str){
+		f&=c>=0;
+	}
+	return f;
+}
+
 std::string get_line(std::vector<char> repl){
 	// 读入一行非汉字字符串并替换部分字符为空格
 	std::string str;
-	for(;;){
-		std::getline(std::cin,str);
-		if(!str.length()) continue;
-		bool f=0;
-		for(char c:str){
-			f|=c<0;
-		}
-		if(!f) break;
-	}
+	while(std::getline(std::cin,str)&&!validstr(str));
 	replace_with(str,repl,' ');
 	return str;
 }
