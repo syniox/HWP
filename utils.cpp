@@ -17,9 +17,17 @@ int rnd(const int l,const int r){
 }
 
 std::string get_line(std::vector<char> repl){
-	// 读入一行字符串并替换部分字符为空格
+	// 读入一行非汉字字符串并替换部分字符为空格
 	std::string str;
-	for(; !str.length(); std::getline(std::cin,str));
+	for(;;){
+		std::getline(std::cin,str);
+		if(!str.length()) continue;
+		bool f=0;
+		for(char c:str){
+			f|=c<0;
+		}
+		if(!f) break;
+	}
 	replace_with(str,repl,' ');
 	return str;
 }
