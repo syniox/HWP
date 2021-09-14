@@ -92,24 +92,31 @@ int main(){
 	//输入模块
 	while(std::getline(std::cin,inbuf)){
 		if(!validstr(inbuf)) continue;
+		std::cerr<<"inbuf:"<<inbuf<<std::endl;
 		int i=mdlcnt++;
+		// 延长数组
 		e_lim.push_back(std::vector<edg>());
 		m_lim.push_back(std::vector<double>(mdlcnt));
 		mdl_name.push_back(std::string());
 		ref_name.push_back(std::string());
 		org_mdl.push_back({vec(),vec()});
+		mdl_ref.push_back(-1);
 		for(auto &v:m_lim){
 			v.push_back(0);
 		}
+		// 输入
 		std::istringstream is(inbuf);
 		is>>mdl_name[i];
+		mdl_idx[mdl_name[i]]=i;
 		vec v,tgt;
 		is>>v.x>>v.y;
 		std::string str;
 		std::getline(is,str);
-		for(; str[0]==' '; str.erase(0,0)){
+		for(; str[0]==' '; str.erase(0,1)){
 			assert(!str.empty());
 		}
+		std::cerr<<"instr:"<<str<<std::endl;
+		// 判断模块固定点坐标
 		if(str[0]=='('){ // 固定坐标
 			replace_with(str,{'(',')',','},' ');
 			std::istringstream istr(str);
